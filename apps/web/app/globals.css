@@ -1,0 +1,488 @@
+/* ==========================================================================
+   RAYA design system
+
+   The visual language is meant to read as a forensic instrument, not a SaaS
+   dashboard. Three rules produce that:
+
+   1. Typography carries the hierarchy. Size and weight do the work that colour
+      and boxes do elsewhere, so the interface stays quiet until a number
+      matters.
+   2. Colour is semantic only. Green, amber and red mean verified, degraded and
+      rejected. Nothing is coloured for decoration, which is why a single green
+      value reads as a real signal.
+   3. Every measured value is monospaced and selectable. Hashes, similarity
+      scores and transaction ids are evidence; they are rendered as data a
+      reviewer can copy, never as prose.
+
+   No gradients, no glass, no purple glow.
+   ========================================================================== */
+
+:root {
+  /* -- surface -------------------------------------------------------- */
+  --bg: #fbfaf8;            /* warm white, not clinical #fff */
+  --bg-raised: #ffffff;
+  --bg-sunken: #f2f0ec;
+  --bg-inset: #ebe8e3;
+
+  /* -- ink ------------------------------------------------------------ */
+  --ink: #0b0b0c;
+  --ink-secondary: #4a4844;
+  --ink-tertiary: #7d7a74;
+  --ink-quaternary: #a8a49c;
+
+  /* -- line ----------------------------------------------------------- */
+  --line: #e2ded7;
+  --line-strong: #cdc8bf;
+
+  /* -- semantic ------------------------------------------------------- */
+  --verified: #2f6b4f;
+  --verified-bg: #eaf1ec;
+  --pending: #8a6a1f;
+  --pending-bg: #f6f0e0;
+  --rejected: #8f2f2f;
+  --rejected-bg: #f6eaea;
+  --neutral: #55606b;
+  --neutral-bg: #edeff1;
+
+  /* -- type ----------------------------------------------------------- */
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, "JetBrains Mono",
+    "Cascadia Mono", Menlo, Consolas, monospace;
+
+  /* -- rhythm --------------------------------------------------------- */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+  --s8: 64px;
+  --s9: 96px;
+  --s10: 144px;
+
+  --radius: 3px;
+  --radius-lg: 6px;
+
+  /* Motion explains the pipeline, so it is calm and consistent. One easing
+     curve everywhere; a second, slower one for anything that "settles". */
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-settle: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 140ms;
+  --dur: 260ms;
+  --dur-slow: 520ms;
+
+  --max-w: 1440px;
+  color-scheme: light;
+}
+
+/* Default ("system") theme stamps no attribute, so only the media query
+   separates light from dark. An explicit choice stamps data-theme and wins in
+   both directions -- see the [data-theme="dark"] block below. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a0a0b;
+    --bg-raised: #121214;
+    --bg-sunken: #080809;
+    --bg-inset: #17171a;
+
+    --ink: #ededea;
+    --ink-secondary: #b0aea9;
+    --ink-tertiary: #7e7c78;
+    --ink-quaternary: #55534f;
+
+    --line: #232326;
+    --line-strong: #34343a;
+
+    --verified: #7fbf9a;
+    --verified-bg: #12201a;
+    --pending: #d5ad5e;
+    --pending-bg: #211c10;
+    --rejected: #d98a8a;
+    --rejected-bg: #211313;
+    --neutral: #9aa4ae;
+    --neutral-bg: #16181b;
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0a0a0b;
+  --bg-raised: #121214;
+  --bg-sunken: #080809;
+  --bg-inset: #17171a;
+
+  --ink: #ededea;
+  --ink-secondary: #b0aea9;
+  --ink-tertiary: #7e7c78;
+  --ink-quaternary: #55534f;
+
+  --line: #232326;
+  --line-strong: #34343a;
+
+  --verified: #7fbf9a;
+  --verified-bg: #12201a;
+  --pending: #d5ad5e;
+  --pending-bg: #211c10;
+  --rejected: #d98a8a;
+  --rejected-bg: #211313;
+  --neutral: #9aa4ae;
+  --neutral-bg: #16181b;
+
+  color-scheme: dark;
+}
+
+/* ==========================================================================
+   base
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+  font-feature-settings: "kern" 1, "liga" 1, "cv11" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Motion is explanatory here, but never at the cost of accessibility. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==========================================================================
+   typography
+   ========================================================================== */
+
+.display {
+  font-size: clamp(3.2rem, 11vw, 9.5rem);
+  line-height: 0.9;
+  letter-spacing: -0.045em;
+  font-weight: 560;
+  margin: 0;
+}
+
+.h1 {
+  font-size: clamp(2rem, 4.5vw, 3.4rem);
+  line-height: 1.04;
+  letter-spacing: -0.032em;
+  font-weight: 560;
+  margin: 0;
+}
+
+.h2 {
+  font-size: clamp(1.35rem, 2.4vw, 1.9rem);
+  line-height: 1.15;
+  letter-spacing: -0.022em;
+  font-weight: 560;
+  margin: 0;
+}
+
+.h3 {
+  font-size: 1.05rem;
+  line-height: 1.3;
+  letter-spacing: -0.012em;
+  font-weight: 560;
+  margin: 0;
+}
+
+.lede {
+  font-size: clamp(1.05rem, 1.6vw, 1.3rem);
+  line-height: 1.5;
+  letter-spacing: -0.014em;
+  color: var(--ink-secondary);
+  margin: 0;
+}
+
+.body {
+  color: var(--ink-secondary);
+  margin: 0;
+}
+
+/* The label style used above every measured value. Small caps-ish tracking is
+   what makes a dense technical panel scannable. */
+.label {
+  font-size: 10.5px;
+  font-weight: 560;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-tertiary);
+  margin: 0;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.hash {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: -0.02em;
+  color: var(--ink-secondary);
+  word-break: break-all;
+  user-select: all; /* one click selects the whole digest */
+}
+
+.numeral {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+/* ==========================================================================
+   layout
+   ========================================================================== */
+
+.shell {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 0 var(--s6);
+}
+
+@media (max-width: 720px) {
+  .shell {
+    padding: 0 var(--s4);
+  }
+}
+
+.rule {
+  height: 1px;
+  background: var(--line);
+  border: 0;
+  margin: 0;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+}
+
+/* ==========================================================================
+   components
+   ========================================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  padding: 13px 22px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--bg);
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 520;
+  letter-spacing: -0.008em;
+  cursor: pointer;
+  transition: opacity var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+
+.btn:hover {
+  opacity: 0.86;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+
+.btn-ghost:hover {
+  background: var(--bg-inset);
+  opacity: 1;
+}
+
+.btn-sm {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+.card {
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+/* Status pill. Colour is the message, so the text repeats it for anyone who
+   cannot rely on hue. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 560;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.pill-verified {
+  background: var(--verified-bg);
+  color: var(--verified);
+}
+
+.pill-rejected {
+  background: var(--rejected-bg);
+  color: var(--rejected);
+}
+
+.pill-pending {
+  background: var(--pending-bg);
+  color: var(--pending);
+}
+
+.pill-neutral {
+  background: var(--neutral-bg);
+  color: var(--neutral);
+}
+
+.dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+/* A labelled measurement: the atom the whole technical UI is built from. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.field-value {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
+}
+
+.spin {
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pulse {
+  animation: pulse 1.6s var(--ease) infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Wide technical content must scroll inside its own container -- the page body
+   never scrolls sideways. */
+.scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.scroll-y {
+  overflow-y: auto;
+}
+
+.scroll-x::-webkit-scrollbar,
+.scroll-y::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scroll-x::-webkit-scrollbar-thumb,
+.scroll-y::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 4px;
+}
+
+.scroll-x::-webkit-scrollbar-track,
+.scroll-y::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

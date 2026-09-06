@@ -1,0 +1,19 @@
+{
+  "name": "raya-blockchain",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tamper-evident anchoring for RAYA evidence records on Core Testnet2.",
+  "scripts": {
+    "build": "hardhat compile",
+    "test": "hardhat test",
+    "deploy": "hardhat run scripts/deploy.js --network coreTestnet2",
+    "deploy:local": "hardhat run scripts/deploy.js --network hardhat",
+    "verify:contract": "hardhat verify --network coreTestnet2",
+    "readback": "hardhat run scripts/readback.js --network coreTestnet2"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.10",
+    "dotenv": "^16.4.5"
+  }
+}

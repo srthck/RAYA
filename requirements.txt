@@ -1,0 +1,19 @@
+# RAYA backend dependencies.
+# Face models run locally via OpenCV; nothing here calls a hosted face API.
+
+opencv-python-headless>=4.9        # YuNet detector + SFace encoder (DNN module)
+numpy>=1.26
+pillow>=10.0                       # decode/validate before OpenCV touches the bytes
+
+fastapi>=0.110
+uvicorn[standard]>=0.27
+python-multipart>=0.0.9            # multipart upload parsing
+pydantic>=2.6
+pydantic-settings>=2.2
+
+httpx>=0.27                        # search provider, candidate retrieval, IPFS
+web3>=6.15                         # Core Testnet2 anchoring and read-back
+python-dotenv>=1.0
+
+pytest>=8.0
+pytest-asyncio>=0.23

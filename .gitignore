@@ -1,0 +1,33 @@
+# Secrets
+.env
+.env.local
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+
+# Models (fetched via scripts/fetch_models.py; ~39 MB, checksummed)
+models/*.onnx
+
+# Runtime artifacts
+.raya-data/
+
+# Node
+node_modules/
+.next/
+out/
+blockchain/artifacts/
+blockchain/cache/
+blockchain/typechain-types/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Hardhat deployment records are environment-specific
+blockchain/deployments/
