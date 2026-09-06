@@ -32,18 +32,34 @@ export function Nav({ minimal = false }: { minimal?: boolean }) {
         height: "var(--nav-h, 58px)",
       }}
     >
-      <Link
-        href="/"
-        aria-label="RAYA home"
-        style={{
-          fontSize: 15,
-          fontWeight: 640,
-          letterSpacing: "0.16em",
-          color: "var(--ink)",
-        }}
-      >
-        RAYA
-      </Link>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--s4)", minWidth: 0 }}>
+        <Link
+          href="/"
+          aria-label="RAYA home"
+          style={{
+            fontSize: 15,
+            fontWeight: 640,
+            letterSpacing: "0.16em",
+            color: "var(--ink)",
+            flex: "none",
+          }}
+        >
+          RAYA
+        </Link>
+        <span
+          className="nav-tagline label"
+          style={{
+            fontSize: 9.5,
+            letterSpacing: "0.16em",
+            color: "var(--ink-quaternary)",
+            paddingLeft: "var(--s4)",
+            borderLeft: "1px solid var(--line)",
+            whiteSpace: "nowrap",
+          }}
+        >
+          Visual evidence verification
+        </span>
+      </div>
 
       <nav aria-label="Primary" style={{ display: "flex", gap: 2 }}>
         {LINKS.map((link) => {

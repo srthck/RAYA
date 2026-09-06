@@ -456,6 +456,288 @@ button {
 }
 
 /* ==========================================================================
+   workstation panels
+
+   The Verify page composes from white panels floating on the daylight canvas.
+   These all live inside the main column -- the two-column workspace grid above
+   is unchanged.
+
+   Every `.panel-grid` child carries `min-width: 0`: a panel containing a full
+   SHA-256 would otherwise refuse to shrink and push the page sideways.
+   ========================================================================== */
+
+.panel {
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: var(--s5);
+  min-width: 0;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  margin-bottom: var(--s4);
+  flex-wrap: wrap;
+}
+
+.panel-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  margin: 0;
+}
+
+/* Two panels side by side, collapsing to one column when the main column is
+   too narrow to carry both. */
+.panel-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.32fr) minmax(0, 1fr);
+  gap: var(--s4);
+  align-items: start;
+}
+
+.panel-grid > * {
+  min-width: 0;
+}
+
+@media (max-width: 1180px) {
+  .panel-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* A labelled metadata row inside a panel: icon-free, aligned, quiet. */
+.meta-row {
+  display: grid;
+  grid-template-columns: minmax(88px, 34%) minmax(0, 1fr);
+  gap: var(--s3);
+  padding: 7px 0;
+  align-items: baseline;
+  border-bottom: 1px solid var(--line);
+}
+
+.meta-row:last-child {
+  border-bottom: none;
+}
+
+.meta-key {
+  font-size: 12px;
+  color: var(--ink-tertiary);
+}
+
+.meta-val {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* ---- horizontal stage stepper ------------------------------------------
+   A compact echo of the Journey rail, sized for a panel header. Nodes and the
+   connectors between them only fill when the backend reports the stage done,
+   so the strip can never run ahead of the pipeline. */
+
+.stepper {
+  display: grid;
+  gap: 0;
+  align-items: start;
+}
+
+.stepper-track {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-width: 0;
+}
+
+.stepper-node {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-strong);
+  background: var(--bg-raised);
+  flex: none;
+  display: grid;
+  place-items: center;
+  font-size: 8.5px;
+  color: transparent;
+  transition:
+    background var(--dur) var(--ease),
+    border-color var(--dur) var(--ease),
+    color var(--dur) var(--ease);
+}
+
+.stepper-node[data-state="done"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.stepper-node[data-state="active"] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.stepper-node[data-state="failed"] {
+  background: var(--rejected);
+  border-color: var(--rejected);
+  color: #fff;
+}
+
+.stepper-node[data-state="skipped"] {
+  border-color: var(--pending);
+  border-style: dashed;
+}
+
+.stepper-link {
+  height: 1.5px;
+  flex: 1 1 auto;
+  min-width: 8px;
+  background: var(--line-strong);
+  transition: background var(--dur) var(--ease);
+}
+
+.stepper-link[data-filled="true"] {
+  background: var(--accent);
+}
+
+.stepper-labels {
+  display: flex;
+  margin-top: 7px;
+  min-width: 0;
+}
+
+.stepper-label {
+  flex: 1 1 0;
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-quaternary);
+  text-align: center;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stepper-label[data-on="true"] {
+  color: var(--ink-secondary);
+  font-weight: 560;
+}
+
+/* ---- tabs ---------------------------------------------------------------- */
+
+.tab {
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 100px;
+  padding: 5px 13px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-tertiary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.tab:hover:not([aria-selected="true"]) {
+  background: var(--bg-sunken);
+  color: var(--ink-secondary);
+}
+
+.tab[aria-selected="true"] {
+  background: var(--accent);
+  color: #fff;
+}
+
+.tab:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* ---- horizontal lineage strip ------------------------------------------- */
+
+.lineage-strip {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 0;
+  overflow-x: auto;
+  padding-bottom: var(--s2);
+}
+
+.lineage-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  min-width: 62px;
+}
+
+.lineage-dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-raised);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-quaternary);
+  transition:
+    background var(--dur) var(--ease),
+    border-color var(--dur) var(--ease),
+    color var(--dur) var(--ease);
+}
+
+.lineage-step[data-state="done"] .lineage-dot {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.lineage-step[data-state="active"] .lineage-dot {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.lineage-caption {
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-quaternary);
+  white-space: nowrap;
+}
+
+.lineage-step[data-state="done"] .lineage-caption,
+.lineage-step[data-state="active"] .lineage-caption {
+  color: var(--ink-secondary);
+}
+
+.lineage-arrow {
+  flex: none;
+  color: var(--line-strong);
+  font-size: 11px;
+  margin-bottom: 18px;
+}
+
+@media (max-width: 720px) {
+  .nav-tagline {
+    display: none;
+  }
+}
+
+/* ==========================================================================
    atmosphere
 
    Three layers of daylight behind the content: a pale sky wash, a large soft

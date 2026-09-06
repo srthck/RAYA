@@ -9,6 +9,7 @@
  * similarity score against the threshold.
  */
 
+import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { Pill } from "@/components/atoms";
@@ -279,6 +280,8 @@ export function CandidateTile({
   );
 }
 
+type Filter = "all" | "verified" | "rejected" | "other";
+
 export function CandidateWall({
   candidates,
   threshold,
@@ -294,16 +297,62 @@ export function CandidateWall({
   verificationId: string | null;
   focusMatch: boolean;
 }) {
-  const social = candidates.filter((c) => c.is_social);
-  const filtered = candidates.filter((c) => !c.is_social);
+  const [filter, setFilter] = useState<Filter>("all");
+
+  const social = useMemo(() => candidates.filter((c) => c.is_social), [candidates]);
+  const filteredOut = useMemo(() => candidates.filter((c) => !c.is_social), [candidates]);
+
+  const buckets = useMemo(
+    () => ({
+      all: social,
+      verified: social.filter((c) => c.status === "verified"),
+      rejected: social.filter((c) => c.status === "rejected"),
+      // Retrieved but never scored: no face, unreachable, undecodable. These
+      // are outcomes in their own right and stay visible.
+      other: social.filter(
+        (c) => c.status !== "verified" && c.status !== "rejected",
+      ),
+    }),
+    [social],
+  );
+
+  const shown = buckets[filter];
+
+  const TABS: { key: Filter; label: string }[] = [
+    { key: "all", label: "All" },
+    { key: "verified", label: "Verified" },
+    { key: "rejected", label: "Rejected" },
+    { key: "other", label: "Not compared" },
+  ];
 
   return (
-    <section style={{ display: "flex", flexDirection: "column", gap: "var(--s4)" }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: "var(--s3)" }}>
-        <p className="label">Candidates</p>
+    <section className="panel" style={{ display: "flex", flexDirection: "column", gap: "var(--s4)" }}>
+      <div className="panel-head" style={{ marginBottom: 0 }}>
+        <h2 className="panel-title">Discovered candidates</h2>
         <span className="mono" style={{ fontSize: 11, color: "var(--ink-tertiary)" }}>
-          {social.length} social · {filtered.length} filtered out
+          {social.length} social · {filteredOut.length} filtered out
         </span>
+      </div>
+
+      {/* Filters, not a summary: every bucket stays reachable, including the
+          failures. Counts come from real outcomes. */}
+      <div role="tablist" aria-label="Candidate outcome" style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+        {TABS.map((tab) => {
+          const count = buckets[tab.key].length;
+          return (
+            <button
+              key={tab.key}
+              role="tab"
+              type="button"
+              className="tab"
+              aria-selected={filter === tab.key}
+              disabled={count === 0 && tab.key !== "all"}
+              onClick={() => setFilter(tab.key)}
+            >
+              {tab.label} ({count})
+            </button>
+          );
+        })}
       </div>
 
       <div
@@ -314,7 +363,7 @@ export function CandidateWall({
         }}
       >
         <AnimatePresence mode="popLayout">
-          {social.map((candidate) => (
+          {shown.map((candidate) => (
             <CandidateTile
               key={candidate.id}
               candidate={candidate}
@@ -327,7 +376,7 @@ export function CandidateWall({
         </AnimatePresence>
       </div>
 
-      {filtered.length > 0 && (
+      {filteredOut.length > 0 && (
         <details>
           <summary
             style={{
@@ -337,7 +386,7 @@ export function CandidateWall({
               listStyle: "none",
             }}
           >
-            {filtered.length} result{filtered.length === 1 ? "" : "s"} were not
+            {filteredOut.length} result{filteredOut.length === 1 ? "" : "s"} were not
             public social sources — show
           </summary>
           <ul
@@ -349,7 +398,7 @@ export function CandidateWall({
               gap: 6,
             }}
           >
-            {filtered.map((candidate) => (
+            {filteredOut.map((candidate) => (
               <li
                 key={candidate.id}
                 className="mono"

@@ -18,7 +18,9 @@ import { MatchReveal } from "@/components/MatchReveal";
 import { Nav } from "@/components/Nav";
 import { TechPanel } from "@/components/TechPanel";
 import { InputEvidence } from "@/components/InputEvidence";
-import { RunTelemetry } from "@/components/RunTelemetry";
+import { LineageStrip } from "@/components/LineageStrip";
+import { MatchPreview } from "@/components/MatchPreview";
+import { RunStatus } from "@/components/RunStatus";
 import { UploadZone } from "@/components/UploadZone";
 import { Empty, Pill } from "@/components/atoms";
 import { api } from "@/lib/api";
@@ -120,23 +122,37 @@ export default function VerifyPage() {
 
           {verificationId && (
             <>
-              {/* Live telemetry, read entirely from the event stream. */}
-              <RunTelemetry state={state} verificationId={verificationId} />
-
-              {inputContext && (
-                <InputEvidence
-                  upload={inputContext.upload}
-                  previewUrl={inputContext.previewUrl}
-                  fileName={inputContext.fileName}
-                  status={
-                    state.failure
-                      ? "FAILED"
-                      : state.stages.face?.state === "done"
-                        ? "COMPLETE"
-                        : "RUNNING"
-                  }
-                />
-              )}
+              {/* Input evidence beside live run status: what is being
+                  verified, and where the pipeline has actually got to. */}
+              <div className="panel-grid">
+                {inputContext ? (
+                  <section className="panel" aria-label="Input evidence panel">
+                    <InputEvidence
+                      upload={inputContext.upload}
+                      previewUrl={inputContext.previewUrl}
+                      fileName={inputContext.fileName}
+                      status={
+                        state.failure
+                          ? "FAILED"
+                          : state.stages.face?.state === "done"
+                            ? "COMPLETE"
+                            : "RUNNING"
+                      }
+                    />
+                  </section>
+                ) : (
+                  <div />
+                )}
+                <div style={{ display: "grid", gap: "var(--s4)", minWidth: 0 }}>
+                  <RunStatus state={state} verificationId={verificationId} />
+                  <section className="panel" aria-label="Technical panel">
+                    <div className="panel-head">
+                      <h2 className="panel-title">Technical</h2>
+                    </div>
+                    <TechPanel state={state} config={config} />
+                  </section>
+                </div>
+              </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: "var(--s3)", flexWrap: "wrap" }}>
                 {!state.finished ? (
@@ -188,7 +204,17 @@ export default function VerifyPage() {
                 </div>
               )}
 
-              {/* The match */}
+              {/* A comparison panel appears as soon as anything has been
+                  scored -- including a rejection, which is a real result. */}
+              {(state.match || state.candidates.some((c) => c.status === "rejected")) && (
+                <MatchPreview
+                  state={state}
+                  verificationId={verificationId}
+                  threshold={threshold}
+                />
+              )}
+
+              {/* The full reveal, only for an actual verified match. */}
               {state.match && (
                 <MatchReveal
                   state={state}
@@ -232,15 +258,43 @@ export default function VerifyPage() {
               {state.candidates.length === 0 && !state.failure && !state.finished && (
                 <Empty>Waiting for the search provider…</Empty>
               )}
+
+              <LineageStrip state={state} />
             </>
           )}
 
-          {/* Technical lives in the main column, in normal flow, beneath the
-              work it describes. It is not a floating sidebar. */}
-          <TechPanel state={state} config={config} />
+          {/* Before a run starts there is no run panel, so Technical still
+              needs a home: it shows the configured models and thresholds. */}
+          {!verificationId && (
+            <section className="panel" aria-label="Technical panel">
+              <div className="panel-head">
+                <h2 className="panel-title">Technical</h2>
+              </div>
+              <TechPanel state={state} config={config} />
+            </section>
+          )}
         </div>
 
       </div>
+
+      <footer
+        style={{
+          marginTop: "var(--s9)",
+          paddingTop: "var(--s5)",
+          borderTop: "1px solid var(--line)",
+          display: "flex",
+          justifyContent: "space-between",
+          gap: "var(--s4)",
+          flexWrap: "wrap",
+        }}
+      >
+        <span className="mono" style={{ fontSize: 11, color: "var(--ink-quaternary)" }}>
+          RAYA · Visual evidence verification
+        </span>
+        <span className="mono" style={{ fontSize: 11, color: "var(--ink-quaternary)" }}>
+          A similarity score is not an identity.
+        </span>
+      </footer>
     </main>
   );
 }

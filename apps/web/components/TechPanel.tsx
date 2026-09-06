@@ -95,18 +95,15 @@ export function TechPanel({
         display: "grid",
         // Full main-column width now, so the blocks flow into columns instead
         // of one long narrow stack.
-        gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+        gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
         gap: "var(--s5) var(--s6)",
         minWidth: 0,
-        paddingTop: "var(--s5)",
-        borderTop: "1px solid var(--line)",
       }}
     >
-      {/* ---- static configuration -------------------------------------- */}
+      {/* ---- static configuration --------------------------------------
+           The enclosing panel already carries the "Technical" heading, so this
+           block is not labelled again. */}
       <div>
-        <p className="label" style={{ marginBottom: "var(--s3)" }}>
-          Technical
-        </p>
         <div style={{ display: "grid", gap: "var(--s3)" }}>
           <Field
             label="Detector"
