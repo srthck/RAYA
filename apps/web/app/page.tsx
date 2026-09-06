@@ -16,7 +16,7 @@ import { motion, useReducedMotion } from "framer-motion";
 
 import { Nav } from "@/components/Nav";
 
-const WORDS = ["Discover.", "Verify.", "Anchor."];
+const HERO_LINES = ["Discovery", "isn't proof."];
 
 const BEATS = [
   {
@@ -66,50 +66,48 @@ export default function Landing() {
           truth for what is on screen. */}
       <section
         style={{
-          padding: "clamp(56px, 13vh, 150px) 0 clamp(56px, 10vh, 116px)",
-          maxWidth: 1120,
+          padding: "clamp(64px, 15vh, 176px) 0 clamp(64px, 12vh, 132px)",
+          maxWidth: 1140,
         }}
       >
         <motion.p
           className="label"
-          initial={reduce ? {} : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6 }}
-          style={{ letterSpacing: "0.34em", marginBottom: "var(--s5)" }}
+          initial={reduce ? {} : { opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55 }}
+          style={{ letterSpacing: "0.36em", marginBottom: "var(--s5)" }}
         >
-          Visual evidence verification
+          RAYA · Visual evidence verification
         </motion.p>
 
-        {WORDS.map((word, index) => (
+        {/* The display type is near-black. The blue lives in the environment,
+            never in the headline. */}
+        {HERO_LINES.map((line, index) => (
           <motion.h1
-            key={word}
+            key={line}
             className="display"
-            initial={reduce ? {} : { opacity: 0, y: 26, filter: "blur(10px)" }}
+            initial={reduce ? {} : { opacity: 0, y: 24, filter: "blur(12px)" }}
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             transition={{
-              duration: 0.9,
-              delay: 0.12 + index * 0.13,
+              duration: 0.95,
+              delay: 0.1 + index * 0.14,
               ease: [0.16, 1, 0.3, 1],
             }}
-            style={{
-              // The third word carries the accent: one point of colour in the
-              // whole hero.
-              color: index === 2 ? "var(--accent)" : "var(--ink)",
-            }}
+            style={{ color: "var(--ink)" }}
           >
-            {word}
+            {line}
           </motion.h1>
         ))}
 
         <motion.p
           className="lede"
-          style={{ marginTop: "var(--s6)", maxWidth: 540 }}
-          initial={reduce ? {} : { opacity: 0, y: 12 }}
+          style={{ marginTop: "var(--s6)", maxWidth: 560 }}
+          initial={reduce ? {} : { opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.62 }}
+          transition={{ duration: 0.8, delay: 0.42, ease: [0.16, 1, 0.3, 1] }}
         >
-          Reverse search discovers candidates. RAYA independently verifies them.
-          Evidence is preserved and anchored for later integrity checking.
+          RAYA discovers the source, verifies the face independently, and anchors
+          the evidence.
         </motion.p>
 
         <motion.div
@@ -119,9 +117,9 @@ export default function Landing() {
             gap: "var(--s3)",
             flexWrap: "wrap",
           }}
-          initial={reduce ? {} : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.76 }}
+          initial={reduce ? {} : { opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.56, ease: [0.16, 1, 0.3, 1] }}
         >
           <Link href="/verify" className="btn">
             Start verification
@@ -135,12 +133,12 @@ export default function Landing() {
           className="mono"
           initial={reduce ? {} : { opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.9, delay: 0.9 }}
+          transition={{ duration: 0.9, delay: 0.72 }}
           style={{
-            marginTop: "var(--s7)",
+            marginTop: "var(--s8)",
             fontSize: 11,
-            color: "var(--ink-quaternary)",
-            letterSpacing: "0.02em",
+            color: "var(--ink-tertiary)",
+            letterSpacing: "0.08em",
           }}
         >
           YuNet · SFace · SHA-256 · IPFS · Core Testnet2
@@ -150,7 +148,7 @@ export default function Landing() {
       <hr className="rule" />
 
       {/* ---- the pipeline, in words ---------------------------------- */}
-      <section style={{ padding: "clamp(56px, 10vh, 128px) 0" }}>
+      <section style={{ padding: "clamp(64px, 11vh, 140px) 0" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "clamp(56px, 9vh, 112px)" }}>
           {BEATS.map((beat, index) => (
             <motion.div
@@ -216,10 +214,10 @@ export default function Landing() {
         {...rise()}
         style={{ padding: "clamp(72px, 14vh, 176px) 0 clamp(80px, 16vh, 200px)" }}
       >
-        <h2 className="display" style={{ maxWidth: 1000 }}>
-          Discovery
+        <h2 className="display" style={{ maxWidth: 1000, color: "var(--ink)" }}>
+          Verify it
           <br />
-          isn&apos;t proof.
+          yourself.
         </h2>
         <p className="lede" style={{ marginTop: "var(--s6)", maxWidth: 560 }}>
           RAYA discovers the source, verifies the face independently, and anchors
