@@ -16,6 +16,8 @@ import { motion, useReducedMotion } from "framer-motion";
 
 import { Nav } from "@/components/Nav";
 
+const WORDS = ["Discover.", "Verify.", "Anchor."];
+
 const BEATS = [
   {
     lead: "One image.",
@@ -59,51 +61,67 @@ export default function Landing() {
       <Nav minimal />
 
       {/* ---- hero ---------------------------------------------------- */}
+      {/* Decorative entrance only. Nothing here reflects pipeline state --
+          once a verification starts, real SSE events are the only source of
+          truth for what is on screen. */}
       <section
         style={{
-          padding: "clamp(64px, 14vh, 168px) 0 clamp(56px, 10vh, 120px)",
-          maxWidth: 1100,
+          padding: "clamp(56px, 13vh, 150px) 0 clamp(56px, 10vh, 116px)",
+          maxWidth: 1120,
         }}
       >
-        <motion.h1
-          className="display"
-          initial={reduce ? {} : { opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
+        <motion.p
+          className="label"
+          initial={reduce ? {} : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6 }}
+          style={{ letterSpacing: "0.34em", marginBottom: "var(--s5)" }}
         >
-          RAYA
-        </motion.h1>
+          Visual evidence verification
+        </motion.p>
 
-        <motion.div
-          className="h1"
-          style={{ marginTop: "var(--s6)", maxWidth: 880 }}
-          initial={reduce ? {} : { opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.75, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-        >
-          Find the source.
-          <br />
-          Verify the face.
-          <br />
-          <span style={{ color: "var(--ink-tertiary)" }}>Anchor the evidence.</span>
-        </motion.div>
+        {WORDS.map((word, index) => (
+          <motion.h1
+            key={word}
+            className="display"
+            initial={reduce ? {} : { opacity: 0, y: 26, filter: "blur(10px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{
+              duration: 0.9,
+              delay: 0.12 + index * 0.13,
+              ease: [0.16, 1, 0.3, 1],
+            }}
+            style={{
+              // The third word carries the accent: one point of colour in the
+              // whole hero.
+              color: index === 2 ? "var(--accent)" : "var(--ink)",
+            }}
+          >
+            {word}
+          </motion.h1>
+        ))}
 
         <motion.p
           className="lede"
-          style={{ marginTop: "var(--s5)", maxWidth: 560 }}
-          initial={reduce ? {} : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.7, delay: 0.24 }}
+          style={{ marginTop: "var(--s6)", maxWidth: 540 }}
+          initial={reduce ? {} : { opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.62 }}
         >
-          Discover public visual evidence, independently verify it, and preserve
-          the result.
+          Reverse search discovers candidates. RAYA independently verifies them.
+          Evidence is preserved and anchored for later integrity checking.
         </motion.p>
 
         <motion.div
-          style={{ marginTop: "var(--s7)", display: "flex", gap: "var(--s3)", flexWrap: "wrap" }}
+          style={{
+            marginTop: "var(--s7)",
+            display: "flex",
+            gap: "var(--s3)",
+            flexWrap: "wrap",
+          }}
           initial={reduce ? {} : { opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.7, delay: 0.34 }}
+          transition={{ duration: 0.8, delay: 0.76 }}
         >
           <Link href="/verify" className="btn">
             Start verification
@@ -112,6 +130,21 @@ export default function Landing() {
             How it works
           </Link>
         </motion.div>
+
+        <motion.p
+          className="mono"
+          initial={reduce ? {} : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.9, delay: 0.9 }}
+          style={{
+            marginTop: "var(--s7)",
+            fontSize: 11,
+            color: "var(--ink-quaternary)",
+            letterSpacing: "0.02em",
+          }}
+        >
+          YuNet · SFace · SHA-256 · IPFS · Core Testnet2
+        </motion.p>
       </section>
 
       <hr className="rule" />

@@ -122,8 +122,51 @@ export function TechPanel({
           />
           <Field label="Metric" value={config ? `${config.metric} similarity` : "loading"} />
           <Field label="Threshold" value={config ? config.threshold.toFixed(2) : "loading"} />
+          {/* The weight-file digests: what makes a published score
+              reproducible rather than merely attributed to a model name. */}
+          <Field
+            label="Detector digest"
+            value={shortHash(config?.detector.model_sha256, 8, 6)}
+            title={config?.detector.model_sha256 ?? undefined}
+          />
+          <Field
+            label="Encoder digest"
+            value={shortHash(config?.encoder.model_sha256, 8, 6)}
+            title={config?.encoder.model_sha256 ?? undefined}
+          />
         </div>
       </div>
+
+      {/* ---- 02/03 face + encoding --------------------------------------- */}
+      <StatusBlock
+        title="Face"
+        status={
+          state.stages.face?.state === "done"
+            ? "COMPLETE"
+            : state.stages.face?.state === "active"
+              ? "RUNNING"
+              : state.stages.face?.state === "failed"
+                ? "FAILED"
+                : "WAITING"
+        }
+      >
+        <div style={{ display: "grid", gap: "var(--s3)" }}>
+          <Field
+            label="Faces detected"
+            value={state.faces.length ? String(state.faces.length) : "not run"}
+          />
+          <Field
+            label="Embedding"
+            value={state.stages.face?.state === "done" ? "128d · local only" : "not run"}
+            tone={state.stages.face?.state === "done" ? "verified" : undefined}
+          />
+          <Field
+            label="Exported"
+            value="never"
+            title="The embedding is not written to evidence, IPFS or the chain."
+          />
+        </div>
+      </StatusBlock>
 
       {/* ---- 01 input ---------------------------------------------------- */}
       <StatusBlock title="This run" status={inputStatus}>

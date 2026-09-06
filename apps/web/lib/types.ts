@@ -214,11 +214,24 @@ export interface UploadResult {
 }
 
 export interface RayaConfig {
-  detector: { name: string; version: string };
-  encoder: { name: string; version: string; dim: number; metric: string };
+  // `model_sha256` identifies the exact weight file, so a published similarity
+  // is reproducible by anyone holding the same models.
+  detector: { name: string; version: string; model_sha256?: string | null };
+  encoder: {
+    name: string;
+    version: string;
+    dim: number;
+    metric: string;
+    model_sha256?: string | null;
+  };
   threshold: number;
   metric: string;
-  search: { provider: string; display_name: string; configured: boolean };
+  search: {
+    provider: string;
+    display_name: string;
+    configured: boolean;
+    supports_direct_upload?: boolean;
+  };
   storage: { provider: string; configured: boolean };
   chain: {
     provider: string;

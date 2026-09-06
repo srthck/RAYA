@@ -12,15 +12,21 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fbfaf8" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0b" },
+    { media: "(prefers-color-scheme: light)", color: "#f7fbfd" },
+    { media: "(prefers-color-scheme: dark)", color: "#060b12" },
   ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {/* Decorative only: a fixed field of soft blue light behind all
+            content. It never encodes state, and it is pointer-events:none so
+            it cannot affect layout or interaction. */}
+        <div className="atmosphere" aria-hidden="true" />
+        {children}
+      </body>
     </html>
   );
 }

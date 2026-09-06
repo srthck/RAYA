@@ -18,7 +18,12 @@ import { formatBytes } from "@/lib/format";
 import type { UploadResult } from "@/lib/types";
 
 interface Props {
-  onStart: (verificationId: string) => void;
+  /** The page keeps the upload and its preview so the input stays visible
+      for the whole run, instead of unmounting with this component. */
+  onStart: (
+    verificationId: string,
+    context: { upload: UploadResult; previewUrl: string | null; fileName: string | null },
+  ) => void;
   disabled?: boolean;
   disabledReason?: string;
 }
@@ -67,7 +72,11 @@ export function UploadZone({ onStart, disabled, disabledReason }: Props) {
         upload.upload_id,
         upload.requires_selection ? selected : null,
       );
-      onStart(verification_id);
+      onStart(verification_id, {
+        upload,
+        previewUrl: preview,
+        fileName: file?.name ?? null,
+      });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not start verification.");
       setBusy(false);

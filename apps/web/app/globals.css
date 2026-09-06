@@ -1,56 +1,60 @@
 /* ==========================================================================
    RAYA design system
 
-   The visual language is meant to read as a forensic instrument, not a SaaS
-   dashboard. Three rules produce that:
+   The instrument should read as clean air and water over deep, precise type:
+   roughly 70% icy white, 20% near-black navy typography, 10% water-blue
+   accent. Colour is never decorative -- green, amber and red mean verified,
+   degraded and rejected, and cyan means "interactive or in progress". Because
+   nothing else is coloured, a single accent reads as a real signal.
 
-   1. Typography carries the hierarchy. Size and weight do the work that colour
-      and boxes do elsewhere, so the interface stays quiet until a number
-      matters.
-   2. Colour is semantic only. Green, amber and red mean verified, degraded and
-      rejected. Nothing is coloured for decoration, which is why a single green
-      value reads as a real signal.
-   3. Every measured value is monospaced and selectable. Hashes, similarity
-      scores and transaction ids are evidence; they are rendered as data a
-      reviewer can copy, never as prose.
+   Typography carries the hierarchy. Size, weight and tracking do the work that
+   borders and fills do elsewhere, so the interface stays quiet until a
+   measurement matters.
 
-   No gradients, no glass, no purple glow.
+   Every measured value is monospaced and selectable: hashes, similarity scores
+   and transaction ids are evidence, rendered as data a reviewer can copy.
    ========================================================================== */
 
 :root {
-  /* -- surface -------------------------------------------------------- */
-  --bg: #fbfaf8;            /* warm white, not clinical #fff */
+  /* -- surface: ice ---------------------------------------------------- */
+  --bg: #f7fbfd;
   --bg-raised: #ffffff;
-  --bg-sunken: #f2f0ec;
-  --bg-inset: #ebe8e3;
+  --bg-sunken: #eef5f9;
+  --bg-inset: #e4eef4;
 
-  /* -- ink ------------------------------------------------------------ */
-  --ink: #0b0b0c;
-  --ink-secondary: #4a4844;
-  --ink-tertiary: #7d7a74;
-  --ink-quaternary: #a8a49c;
+  /* -- ink: deep navy, not pure black ---------------------------------- */
+  --ink: #07111f;
+  --ink-secondary: #47586b;
+  --ink-tertiary: #7b8c9e;
+  --ink-quaternary: #a9b8c6;
 
-  /* -- line ----------------------------------------------------------- */
-  --line: #e2ded7;
-  --line-strong: #cdc8bf;
+  /* -- line ------------------------------------------------------------ */
+  --line: #dde8ef;
+  --line-strong: #c4d4e0;
 
-  /* -- semantic ------------------------------------------------------- */
-  --verified: #2f6b4f;
-  --verified-bg: #eaf1ec;
-  --pending: #8a6a1f;
-  --pending-bg: #f6f0e0;
-  --rejected: #8f2f2f;
-  --rejected-bg: #f6eaea;
-  --neutral: #55606b;
-  --neutral-bg: #edeff1;
+  /* -- accent: water. Used for interaction and in-progress only. -------- */
+  --accent: #0d7fa0;
+  --accent-strong: #0a6480;
+  --accent-soft: #dcf0f7;
 
-  /* -- type ----------------------------------------------------------- */
-  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* -- semantic -------------------------------------------------------- */
+  --verified: #15795a;
+  --verified-bg: #e2f2eb;
+  --pending: #93670f;
+  --pending-bg: #f8f0dd;
+  --rejected: #a3382f;
+  --rejected-bg: #f8e9e7;
+  --neutral: #52667a;
+  --neutral-bg: #eaf1f6;
+
+  /* -- type ------------------------------------------------------------ */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    "Segoe UI Variable Display", "Segoe UI", Inter, Roboto, "Helvetica Neue",
+    Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, "JetBrains Mono",
     "Cascadia Mono", Menlo, Consolas, monospace;
 
-  /* -- rhythm --------------------------------------------------------- */
+  /* -- rhythm ---------------------------------------------------------- */
   --s1: 4px;
   --s2: 8px;
   --s3: 12px;
@@ -62,74 +66,94 @@
   --s9: 96px;
   --s10: 144px;
 
-  --radius: 3px;
-  --radius-lg: 6px;
+  --radius: 4px;
+  --radius-lg: 10px;
+  --radius-xl: 16px;
 
-  /* Motion explains the pipeline, so it is calm and consistent. One easing
-     curve everywhere; a second, slower one for anything that "settles". */
+  /* Shadows are light passing through water: wide, faint, tinted blue --
+     never a grey drop shadow. */
+  --shadow-sm: 0 1px 2px rgba(10, 40, 60, 0.04);
+  --shadow: 0 2px 8px rgba(10, 40, 60, 0.05), 0 1px 2px rgba(10, 40, 60, 0.04);
+  --shadow-lift: 0 12px 32px rgba(10, 40, 60, 0.08), 0 2px 6px rgba(10, 40, 60, 0.04);
+
+  /* Motion explains the pipeline, so it is calm and consistent: one easing
+     curve everywhere, and a slower one for anything that settles. */
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
   --ease-settle: cubic-bezier(0.16, 1, 0.3, 1);
   --dur-fast: 140ms;
   --dur: 260ms;
-  --dur-slow: 520ms;
+  --dur-slow: 560ms;
 
   --max-w: 1440px;
   color-scheme: light;
 }
 
-/* Default ("system") theme stamps no attribute, so only the media query
-   separates light from dark. An explicit choice stamps data-theme and wins in
-   both directions -- see the [data-theme="dark"] block below. */
+/* Dark is a deep navy reading of the same system, not an inversion. The
+   default ("system") theme stamps no attribute, so only the media query
+   separates light from dark; an explicit choice stamps data-theme and wins in
+   both directions. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0a0a0b;
-    --bg-raised: #121214;
-    --bg-sunken: #080809;
-    --bg-inset: #17171a;
+    --bg: #060b12;
+    --bg-raised: #0c141d;
+    --bg-sunken: #040810;
+    --bg-inset: #121c27;
 
-    --ink: #ededea;
-    --ink-secondary: #b0aea9;
-    --ink-tertiary: #7e7c78;
-    --ink-quaternary: #55534f;
+    --ink: #eaf2f8;
+    --ink-secondary: #9fb3c4;
+    --ink-tertiary: #6f8296;
+    --ink-quaternary: #4a5b6c;
 
-    --line: #232326;
-    --line-strong: #34343a;
+    --line: #1b2735;
+    --line-strong: #2b3a4b;
 
-    --verified: #7fbf9a;
-    --verified-bg: #12201a;
-    --pending: #d5ad5e;
-    --pending-bg: #211c10;
-    --rejected: #d98a8a;
-    --rejected-bg: #211313;
-    --neutral: #9aa4ae;
-    --neutral-bg: #16181b;
+    --accent: #4cc0e0;
+    --accent-strong: #7ad4ee;
+    --accent-soft: #0d2430;
+
+    --verified: #5fc79b;
+    --verified-bg: #0c2019;
+    --pending: #d8b064;
+    --pending-bg: #221c0f;
+    --rejected: #e0928a;
+    --rejected-bg: #241413;
+    --neutral: #93a6b8;
+    --neutral-bg: #101a24;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+    --shadow-lift: 0 14px 36px rgba(0, 0, 0, 0.55);
 
     color-scheme: dark;
   }
 }
 
 :root[data-theme="dark"] {
-  --bg: #0a0a0b;
-  --bg-raised: #121214;
-  --bg-sunken: #080809;
-  --bg-inset: #17171a;
+  --bg: #060b12;
+  --bg-raised: #0c141d;
+  --bg-sunken: #040810;
+  --bg-inset: #121c27;
 
-  --ink: #ededea;
-  --ink-secondary: #b0aea9;
-  --ink-tertiary: #7e7c78;
-  --ink-quaternary: #55534f;
+  --ink: #eaf2f8;
+  --ink-secondary: #9fb3c4;
+  --ink-tertiary: #6f8296;
+  --ink-quaternary: #4a5b6c;
 
-  --line: #232326;
-  --line-strong: #34343a;
+  --line: #1b2735;
+  --line-strong: #2b3a4b;
 
-  --verified: #7fbf9a;
-  --verified-bg: #12201a;
-  --pending: #d5ad5e;
-  --pending-bg: #211c10;
-  --rejected: #d98a8a;
-  --rejected-bg: #211313;
-  --neutral: #9aa4ae;
-  --neutral-bg: #16181b;
+  --accent: #4cc0e0;
+  --accent-strong: #7ad4ee;
+  --accent-soft: #0d2430;
+
+  --verified: #5fc79b;
+  --verified-bg: #0c2019;
+  --pending: #d8b064;
+  --pending-bg: #221c0f;
+  --rejected: #e0928a;
+  --rejected-bg: #241413;
+  --neutral: #93a6b8;
+  --neutral-bg: #101a24;
 
   color-scheme: dark;
 }
@@ -197,57 +221,63 @@ button {
    typography
    ========================================================================== */
 
+/* Campaign scale: short, declarative, very large, very tight. Used sparingly --
+   one per view at most, or it stops meaning anything. */
 .display {
-  font-size: clamp(3.2rem, 11vw, 9.5rem);
-  line-height: 0.9;
-  letter-spacing: -0.045em;
-  font-weight: 560;
+  font-size: clamp(3.4rem, 12vw, 10rem);
+  line-height: 0.86;
+  letter-spacing: -0.05em;
+  font-weight: 640;
   margin: 0;
+  text-wrap: balance;
 }
 
 .h1 {
-  font-size: clamp(2rem, 4.5vw, 3.4rem);
-  line-height: 1.04;
-  letter-spacing: -0.032em;
-  font-weight: 560;
+  font-size: clamp(2.1rem, 4.8vw, 3.6rem);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  font-weight: 600;
   margin: 0;
+  text-wrap: balance;
 }
 
 .h2 {
-  font-size: clamp(1.35rem, 2.4vw, 1.9rem);
-  line-height: 1.15;
-  letter-spacing: -0.022em;
-  font-weight: 560;
+  font-size: clamp(1.4rem, 2.5vw, 2rem);
+  line-height: 1.14;
+  letter-spacing: -0.026em;
+  font-weight: 600;
   margin: 0;
 }
 
 .h3 {
-  font-size: 1.05rem;
-  line-height: 1.3;
-  letter-spacing: -0.012em;
-  font-weight: 560;
+  font-size: 1.0625rem;
+  line-height: 1.32;
+  letter-spacing: -0.014em;
+  font-weight: 600;
   margin: 0;
 }
 
 .lede {
-  font-size: clamp(1.05rem, 1.6vw, 1.3rem);
-  line-height: 1.5;
+  font-size: clamp(1.05rem, 1.5vw, 1.28rem);
+  line-height: 1.52;
   letter-spacing: -0.014em;
   color: var(--ink-secondary);
   margin: 0;
+  text-wrap: pretty;
 }
 
 .body {
   color: var(--ink-secondary);
   margin: 0;
+  text-wrap: pretty;
 }
 
-/* The label style used above every measured value. Small caps-ish tracking is
-   what makes a dense technical panel scannable. */
+/* The label above every measured value. The tracking is what makes a dense
+   technical panel scannable at a glance. */
 .label {
-  font-size: 10.5px;
-  font-weight: 560;
-  letter-spacing: 0.1em;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
   color: var(--ink-tertiary);
   margin: 0;
@@ -256,7 +286,7 @@ button {
 .mono {
   font-family: var(--font-mono);
   font-size: 12.5px;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.012em;
   font-variant-numeric: tabular-nums;
 }
 
@@ -272,7 +302,7 @@ button {
 .numeral {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.035em;
 }
 
 /* ==========================================================================
@@ -317,52 +347,76 @@ button {
   align-items: center;
   justify-content: center;
   gap: var(--s2);
-  padding: 13px 22px;
+  padding: 13px 24px;
   border: 1px solid var(--ink);
   background: var(--ink);
-  color: var(--bg);
+  color: var(--bg-raised);
   border-radius: var(--radius);
   font-size: 14px;
-  font-weight: 520;
+  font-weight: 550;
   letter-spacing: -0.008em;
   cursor: pointer;
-  transition: opacity var(--dur-fast) var(--ease),
-    transform var(--dur-fast) var(--ease);
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform var(--dur-fast) var(--ease),
+    box-shadow var(--dur) var(--ease),
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
 }
 
+/* A very small lift on hover: the surface rises toward the light rather than
+   changing colour. */
 .btn:hover {
-  opacity: 0.86;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lift);
 }
 
 .btn:active {
-  transform: translateY(1px);
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .btn-ghost {
-  background: transparent;
+  background: var(--bg-raised);
   color: var(--ink);
   border-color: var(--line-strong);
 }
 
 .btn-ghost:hover {
-  background: var(--bg-inset);
-  opacity: 1;
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-strong);
 }
 
 .btn-sm {
-  padding: 8px 14px;
+  padding: 8px 15px;
   font-size: 13px;
 }
 
+/* A card is a sheet of material floating just off the page, not a SaaS
+   widget: hairline border, faint blue-tinted shadow, generous radius. */
 .card {
   background: var(--bg-raised);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+/* An open surface with no fill -- preferred over a card wherever a border
+   alone is enough, to avoid card-inside-card. */
+.surface {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--bg-raised) 72%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 /* Status pill. Colour is the message, so the text repeats it for anyone who
@@ -371,32 +425,37 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 9px;
+  padding: 4px 10px;
   border-radius: 100px;
   font-size: 11px;
-  font-weight: 560;
+  font-weight: 570;
   letter-spacing: 0.02em;
   white-space: nowrap;
+  border: 1px solid transparent;
 }
 
 .pill-verified {
   background: var(--verified-bg);
   color: var(--verified);
+  border-color: color-mix(in srgb, var(--verified) 18%, transparent);
 }
 
 .pill-rejected {
   background: var(--rejected-bg);
   color: var(--rejected);
+  border-color: color-mix(in srgb, var(--rejected) 18%, transparent);
 }
 
 .pill-pending {
   background: var(--pending-bg);
   color: var(--pending);
+  border-color: color-mix(in srgb, var(--pending) 18%, transparent);
 }
 
 .pill-neutral {
   background: var(--neutral-bg);
   color: var(--neutral);
+  border-color: color-mix(in srgb, var(--neutral) 15%, transparent);
 }
 
 .dot {
@@ -421,6 +480,116 @@ button {
   color: var(--ink);
   font-variant-numeric: tabular-nums;
   word-break: break-all;
+}
+
+/* The sticky nav band.
+
+   The translucent surface is painted by a fixed pseudo-element rather than on
+   the header itself: the header sits inside `.shell`, so its own background
+   would stop at the content box and leave a visible rectangular seam. `fixed`
+   with `inset` spans the viewport without using 100vw, which would overflow
+   horizontally whenever a vertical scrollbar is present. */
+.nav-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  isolation: isolate;
+}
+
+.nav-bar::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--nav-h, 58px);
+  z-index: -1;
+  background: color-mix(in srgb, var(--bg) 76%, transparent);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  border-bottom: 1px solid var(--line);
+  pointer-events: none;
+}
+
+.nav-bar[data-flush="true"]::before {
+  border-bottom-color: transparent;
+}
+
+@media (max-width: 620px) {
+  .input-evidence-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+/* ==========================================================================
+   atmosphere
+
+   A fixed, non-interactive field of very soft blue light behind everything.
+   It drifts slowly enough to be felt rather than watched, and it is purely
+   decorative -- it never encodes state. Fixed and pointer-events:none, so it
+   cannot affect layout or hit-testing.
+   ========================================================================== */
+
+.atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.atmosphere::before,
+.atmosphere::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.5;
+}
+
+.atmosphere::before {
+  width: 60vw;
+  height: 60vw;
+  top: -22vw;
+  left: -14vw;
+  background: radial-gradient(
+    circle at 40% 40%,
+    color-mix(in srgb, var(--accent) 22%, transparent),
+    transparent 68%
+  );
+  animation: drift-a 44s var(--ease) infinite alternate;
+}
+
+.atmosphere::after {
+  width: 52vw;
+  height: 52vw;
+  right: -16vw;
+  top: 22vh;
+  background: radial-gradient(
+    circle at 60% 40%,
+    color-mix(in srgb, var(--accent) 15%, transparent),
+    transparent 70%
+  );
+  animation: drift-b 58s var(--ease) infinite alternate;
+}
+
+@keyframes drift-a {
+  to {
+    transform: translate3d(5vw, 5vh, 0) scale(1.1);
+  }
+}
+
+@keyframes drift-b {
+  to {
+    transform: translate3d(-5vw, -4vh, 0) scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atmosphere::before,
+  .atmosphere::after {
+    animation: none;
+  }
 }
 
 .spin {
@@ -519,7 +688,8 @@ button {
 
 .workspace-rail {
   position: sticky;
-  top: var(--s5);
+  /* Clear the sticky nav rather than sliding beneath it. */
+  top: calc(var(--nav-h, 58px) + var(--s4));
   /* Shrink the grid item to its content so the sticky containing block is the
      rail itself. Without this the item stretches to the row height and sticky
      has room to travel over neighbouring content. */

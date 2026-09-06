@@ -17,14 +17,21 @@ import { JourneyRail } from "@/components/JourneyRail";
 import { MatchReveal } from "@/components/MatchReveal";
 import { Nav } from "@/components/Nav";
 import { TechPanel } from "@/components/TechPanel";
+import { InputEvidence } from "@/components/InputEvidence";
+import { RunTelemetry } from "@/components/RunTelemetry";
 import { UploadZone } from "@/components/UploadZone";
 import { Empty, Pill } from "@/components/atoms";
 import { api } from "@/lib/api";
-import type { RayaConfig } from "@/lib/types";
+import type { RayaConfig, UploadResult } from "@/lib/types";
 import { usePipeline } from "@/lib/usePipeline";
 
 export default function VerifyPage() {
   const [verificationId, setVerificationId] = useState<string | null>(null);
+  const [inputContext, setInputContext] = useState<{
+    upload: UploadResult;
+    previewUrl: string | null;
+    fileName: string | null;
+  } | null>(null);
   const [config, setConfig] = useState<RayaConfig | null>(null);
   const [configError, setConfigError] = useState<string | null>(null);
 
@@ -102,28 +109,50 @@ export default function VerifyPage() {
                   verifies each candidate before preserving what it found.
                 </p>
               </div>
-              <UploadZone onStart={setVerificationId} />
+              <UploadZone
+                onStart={(id, context) => {
+                  setInputContext(context);
+                  setVerificationId(id);
+                }}
+              />
             </>
           )}
 
           {verificationId && (
             <>
-              {/* Live status line */}
+              {/* Live telemetry, read entirely from the event stream. */}
+              <RunTelemetry state={state} verificationId={verificationId} />
+
+              {inputContext && (
+                <InputEvidence
+                  upload={inputContext.upload}
+                  previewUrl={inputContext.previewUrl}
+                  fileName={inputContext.fileName}
+                  status={
+                    state.failure
+                      ? "FAILED"
+                      : state.stages.face?.state === "done"
+                        ? "COMPLETE"
+                        : "RUNNING"
+                  }
+                />
+              )}
+
               <div style={{ display: "flex", alignItems: "center", gap: "var(--s3)", flexWrap: "wrap" }}>
                 {!state.finished ? (
                   <Pill tone="pending">Running</Pill>
                 ) : state.match ? (
-                  <Pill tone="verified">Complete</Pill>
+                  <Pill tone="verified">Verified visual match</Pill>
                 ) : (
                   <Pill tone="neutral">Complete</Pill>
                 )}
-                <span className="mono" style={{ fontSize: 11.5, color: "var(--ink-tertiary)" }}>
-                  {state.events.length} events
-                </span>
                 <button
                   type="button"
                   className="btn btn-ghost btn-sm"
-                  onClick={() => setVerificationId(null)}
+                  onClick={() => {
+                    setVerificationId(null);
+                    setInputContext(null);
+                  }}
                 >
                   New verification
                 </button>

@@ -22,7 +22,9 @@ import { STAGE_ORDER, type PipelineState, type StageState } from "@/lib/usePipel
 
 const COLORS: Record<StageState, string> = {
   idle: "var(--ink-quaternary)",
-  active: "var(--ink)",
+  // In progress reads as water; completed reads as verified green. Two
+  // different meanings, two different colours.
+  active: "var(--accent)",
   done: "var(--verified)",
   failed: "var(--rejected)",
   skipped: "var(--pending)",
@@ -64,13 +66,25 @@ function Marker({ state }: { state: StageState }) {
 
   if (state === "active") {
     return (
-      <motion.span
-        style={{ display: "block" }}
-        animate={{ opacity: [1, 0.4, 1] }}
-        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-      >
-        {glyph}
-      </motion.span>
+      <span style={{ position: "relative", display: "block" }}>
+        <motion.span
+          aria-hidden
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "50%",
+            width: 18,
+            height: 18,
+            marginLeft: -9,
+            marginTop: -9,
+            borderRadius: "50%",
+            background: "var(--accent)",
+          }}
+          animate={{ opacity: [0.22, 0.05, 0.22], scale: [0.85, 1.25, 0.85] }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <span style={{ position: "relative" }}>{glyph}</span>
+      </span>
     );
   }
   return glyph;
@@ -97,15 +111,32 @@ export function JourneyRail({ state }: { state: PipelineState }) {
                   <span
                     aria-hidden
                     style={{
-                      width: 1,
+                      position: "relative",
+                      width: 1.5,
                       flex: 1,
-                      minHeight: 28,
-                      background:
-                        stage.state === "done" ? "var(--verified)" : "var(--line)",
-                      opacity: stage.state === "done" ? 0.4 : 1,
-                      transition: "background var(--dur) var(--ease)",
+                      minHeight: 30,
+                      borderRadius: 2,
+                      background: "var(--line)",
+                      overflow: "hidden",
                     }}
-                  />
+                  >
+                    {/* Fills only when the stage above it actually completed,
+                        so the line can never run ahead of the backend. */}
+                    <motion.span
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        transformOrigin: "top",
+                        background:
+                          stage.state === "done"
+                            ? "var(--verified)"
+                            : "var(--accent)",
+                      }}
+                      initial={false}
+                      animate={{ scaleY: stage.state === "done" ? 1 : 0 }}
+                      transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+                    />
+                  </span>
                 )}
               </div>
 
