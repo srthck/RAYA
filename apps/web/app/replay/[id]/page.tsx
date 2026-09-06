@@ -3,19 +3,22 @@
 /**
  * Replay a stored verification.
  *
- * This re-emits the event log the backend actually wrote, at its original
- * pacing, through the same reducer that drives the live workspace. It is a
- * recording, not a re-enactment: nothing here can show a stage the original run
- * did not reach.
+ * Re-emits the event log the backend actually wrote, at its original pacing,
+ * through the same reducer and the same `RunView` as the live workspace. It is
+ * a recording, not a re-enactment: nothing here can show a stage the original
+ * run did not reach, and a replay that looked different from the run it
+ * records would be worth very little.
  */
 
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 
-import { CandidateWall } from "@/components/CandidateWall";
 import { JourneyRail } from "@/components/JourneyRail";
 import { Nav } from "@/components/Nav";
+import { RunView } from "@/components/RunView";
 import { Pill } from "@/components/atoms";
+import { api } from "@/lib/api";
+import type { RayaConfig } from "@/lib/types";
 import { usePipeline } from "@/lib/usePipeline";
 
 const SPEEDS = [1, 2, 4];
@@ -24,8 +27,13 @@ export default function ReplayPage({ params }: { params: Promise<{ id: string }>
   const { id } = use(params);
   const [speed, setSpeed] = useState(2);
   const [runId, setRunId] = useState<string | null>(id);
+  const [config, setConfig] = useState<RayaConfig | null>(null);
 
   const { state } = usePipeline(runId, { replay: true, speed });
+
+  useEffect(() => {
+    api.config().then(setConfig).catch(() => undefined);
+  }, []);
 
   const restart = () => {
     setRunId(null);
@@ -37,113 +45,71 @@ export default function ReplayPage({ params }: { params: Promise<{ id: string }>
     <main className="shell" style={{ paddingBottom: "var(--s9)" }}>
       <Nav />
 
-      <div style={{ paddingTop: "var(--s6)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--s3)", flexWrap: "wrap" }}>
-          <Pill tone="neutral">Replay</Pill>
-          <span className="mono" style={{ fontSize: 12, color: "var(--ink-tertiary)" }}>
-            {id}
-          </span>
-        </div>
-
-        <h1 className="h1" style={{ marginTop: "var(--s4)", maxWidth: 620 }}>
-          Replaying the recorded run.
-        </h1>
-        <p className="body" style={{ marginTop: "var(--s3)", maxWidth: 560, fontSize: 14 }}>
-          These are the events the pipeline emitted during the original
-          verification, replayed in order at their real relative timings.
-        </p>
-
-        <div style={{ display: "flex", gap: "var(--s2)", marginTop: "var(--s5)", flexWrap: "wrap", alignItems: "center" }}>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={restart}>
-            Restart
-          </button>
-          <span className="label" style={{ marginLeft: "var(--s2)" }}>
-            Speed
-          </span>
-          {SPEEDS.map((s) => (
-            <button
-              key={s}
-              type="button"
-              className="btn btn-ghost btn-sm"
-              onClick={() => {
-                setSpeed(s);
-                restart();
-              }}
-              style={{
-                borderColor: speed === s ? "var(--ink)" : "var(--line-strong)",
-                color: speed === s ? "var(--ink)" : "var(--ink-tertiary)",
-              }}
-            >
-              {s}×
-            </button>
-          ))}
-          <Link href={`/evidence/${id}`} className="btn btn-ghost btn-sm">
-            View evidence
-          </Link>
-        </div>
-
-        <div className="replay-grid" style={{ marginTop: "var(--s7)" }}>
-          <div style={{ position: "sticky", top: "var(--s5)" }}>
+      <div className="workspace">
+        <div className="workspace-rail">
+          <div className="rail-surface">
             <JourneyRail state={state} />
           </div>
+        </div>
 
-          <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "var(--s5)" }}>
-            <div style={{ display: "flex", gap: "var(--s4)", flexWrap: "wrap" }}>
-              <span className="mono" style={{ fontSize: 11.5, color: "var(--ink-tertiary)" }}>
-                {state.events.length} events replayed
-              </span>
-              {state.finished && (
-                <span className="mono" style={{ fontSize: 11.5, color: "var(--verified)" }}>
-                  replay complete
-                </span>
-              )}
-            </div>
+        <div className="workspace-main">
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "var(--s3)",
+              flexWrap: "wrap",
+              paddingTop: "var(--s4)",
+            }}
+          >
+            <Pill tone="neutral">Replay</Pill>
+            <span className="mono" style={{ fontSize: 11.5, color: "var(--ink-tertiary)" }}>
+              {state.events.length} events
+              {state.finished ? " · complete" : ""}
+            </span>
 
-            {state.candidates.length > 0 && (
-              <CandidateWall
-                candidates={state.candidates}
-                threshold={0.4}
-                evaluating={state.evaluating}
-                matchId={state.match?.id}
-                verificationId={id}
-                focusMatch={Boolean(state.match) && state.finished}
-              />
-            )}
+            <span style={{ flex: 1 }} />
 
-            {/* The raw event log, so the replay can be checked against it. */}
-            <details>
-              <summary
-                style={{ cursor: "pointer", fontSize: 12.5, color: "var(--ink-tertiary)" }}
-              >
-                Event log
-              </summary>
-              <div
-                className="scroll-y mono"
+            <button type="button" className="btn btn-ghost btn-sm" onClick={restart}>
+              Restart
+            </button>
+            {SPEEDS.map((s) => (
+              <button
+                key={s}
+                type="button"
+                className="btn btn-ghost btn-sm"
+                aria-pressed={speed === s}
+                onClick={() => {
+                  setSpeed(s);
+                  restart();
+                }}
                 style={{
-                  marginTop: "var(--s3)",
-                  maxHeight: 320,
-                  padding: "var(--s3)",
-                  background: "var(--bg-sunken)",
-                  border: "1px solid var(--line)",
-                  borderRadius: "var(--radius)",
-                  fontSize: 11,
-                  lineHeight: 1.8,
+                  borderColor: speed === s ? "var(--accent)" : "var(--line-strong)",
+                  color: speed === s ? "var(--accent)" : "var(--ink-tertiary)",
                 }}
               >
-                {state.events.map((event) => (
-                  <div key={event.seq} style={{ display: "flex", gap: "var(--s3)" }}>
-                    <span style={{ color: "var(--ink-quaternary)", width: 28 }}>
-                      {String(event.seq).padStart(3, "0")}
-                    </span>
-                    <span style={{ color: "var(--ink-secondary)" }}>{event.type}</span>
-                  </div>
-                ))}
-              </div>
-            </details>
+                {s}×
+              </button>
+            ))}
+            <Link href={`/evidence/${id}`} className="btn btn-ghost btn-sm">
+              Evidence
+            </Link>
           </div>
+
+          <p className="body" style={{ fontSize: 13, maxWidth: "62ch" }}>
+            These are the events the pipeline emitted during the original
+            verification, replayed in order at their real relative timings.
+          </p>
+
+          <RunView
+            state={state}
+            verificationId={id}
+            config={config}
+            threshold={config?.threshold ?? 0.4}
+            previewUrl={`/api/v1/verifications/${id}/assets/input-face.jpg`}
+          />
         </div>
       </div>
-
     </main>
   );
 }

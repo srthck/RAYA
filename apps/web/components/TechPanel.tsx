@@ -89,48 +89,45 @@ export function TechPanel({
       : "NOT RUN";
 
   return (
-    <aside
-      aria-label="Technical detail"
-      style={{
-        display: "grid",
-        // Full main-column width now, so the blocks flow into columns instead
-        // of one long narrow stack.
-        gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-        gap: "var(--s5) var(--s6)",
-        minWidth: 0,
-      }}
-    >
-      {/* ---- static configuration --------------------------------------
-           The enclosing panel already carries the "Technical" heading, so this
-           block is not labelled again. */}
-      <div>
-        <div style={{ display: "grid", gap: "var(--s3)" }}>
-          <Field
-            label="Detector"
-            value={config ? `${config.detector.name} ${config.detector.version}` : "loading"}
-          />
-          <Field
-            label="Encoder"
-            value={
-              config
-                ? `${config.encoder.name} ${config.encoder.version} · ${config.encoder.dim}d`
-                : "loading"
-            }
-          />
-          <Field label="Metric" value={config ? `${config.metric} similarity` : "loading"} />
-          <Field label="Threshold" value={config ? config.threshold.toFixed(2) : "loading"} />
-          {/* The weight-file digests: what makes a published score
-              reproducible rather than merely attributed to a model name. */}
-          <Field
-            label="Detector digest"
-            value={shortHash(config?.detector.model_sha256, 8, 6)}
-            title={config?.detector.model_sha256 ?? undefined}
-          />
-          <Field
-            label="Encoder digest"
-            value={shortHash(config?.encoder.model_sha256, 8, 6)}
-            title={config?.encoder.model_sha256 ?? undefined}
-          />
+    <aside aria-label="Technical detail" style={{ display: "grid", gap: "var(--s6)", minWidth: 0 }}>
+      {/* ---- model provenance, as a specification --------------------- */}
+      <div className="spec">
+        <div>
+          <div className="spec-key">Detector</div>
+          <div className="spec-value">{config?.detector.name ?? "YuNet"}</div>
+          <div className="spec-sub">
+            {config?.detector.version ?? "—"}
+            {config?.detector.model_sha256
+              ? ` · ${shortHash(config.detector.model_sha256, 8, 6)}`
+              : ""}
+          </div>
+        </div>
+
+        <div>
+          <div className="spec-key">Encoder</div>
+          <div className="spec-value">{config?.encoder.name ?? "SFace"}</div>
+          <div className="spec-sub">
+            {config?.encoder.version ?? "—"} · {config?.encoder.dim ?? 128}d
+            {config?.encoder.model_sha256
+              ? ` · ${shortHash(config.encoder.model_sha256, 8, 6)}`
+              : ""}
+          </div>
+        </div>
+
+        <div>
+          <div className="spec-key">Metric</div>
+          <div className="spec-value">Cosine similarity</div>
+          <div className="spec-sub">threshold {(config?.threshold ?? 0.4).toFixed(2)}</div>
+        </div>
+
+        <div>
+          <div className="spec-key">Face embedding</div>
+          <div className="spec-value" style={{ color: "var(--verified)" }}>
+            128d · local only
+          </div>
+          <div className="spec-sub">
+            exported: never — not written to evidence, IPFS or the chain
+          </div>
         </div>
       </div>
 

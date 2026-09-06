@@ -324,13 +324,17 @@ export function reduceEvent(prev: PipelineState, event: RayaEvent): PipelineStat
       };
       const target = stageMap[d.stage as string];
       if (target) {
-        // A missing credential means the stage never ran; that is "skipped",
-        // not "failed". The distinction is what stops an unconfigured
-        // deployment from rendering as a broken one.
-        const unavailable = /not configured|SERPAPI_KEY|CONTRACT_ADDRESS|PINATA_JWT/i.test(
-          String(d.message ?? ""),
-        );
-        mark(target, unavailable ? "skipped" : "failed", d.message);
+        // A stage that was never attempted because a credential is missing is
+        // "skipped", not "failed" -- an unconfigured deployment must not
+        // render as a broken one. The backend sends the error code, so this is
+        // decided on the code rather than by pattern-matching English prose.
+        const NEVER_RAN = new Set([
+          "chain_not_configured",
+          "search_provider_not_configured",
+          "no_public_url",
+          "storage_error",
+        ]);
+        mark(target, NEVER_RAN.has(String(d.code)) ? "skipped" : "failed", d.message);
       }
       break;
     }

@@ -748,6 +748,228 @@ button {
 }
 
 /* ==========================================================================
+   editorial sections
+
+   Hierarchy comes from typography, spacing and hairlines rather than from a
+   box around everything. Only two things stay boxed: the input evidence sheet
+   and the verification result, because those are the artifacts. Everything
+   else -- instrumentation, provenance, lineage -- is a titled band separated
+   by a rule.
+   ========================================================================== */
+
+.section {
+  padding-top: var(--s6);
+  border-top: 1px solid var(--line);
+  min-width: 0;
+}
+
+.section:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s4);
+  flex-wrap: wrap;
+  margin-bottom: var(--s5);
+}
+
+.section-title {
+  font-size: 11px;
+  font-weight: 620;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin: 0;
+}
+
+.section-note {
+  font-size: 12px;
+  color: var(--ink-tertiary);
+  margin: 0;
+}
+
+/* ---- instrumentation strip ---------------------------------------------
+   Run telemetry as an instrument readout: large tabular figures on a hairline
+   rule, not a dashboard tile. */
+
+.instrument {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(78px, 1fr));
+  gap: var(--s4) var(--s5);
+  padding-bottom: var(--s5);
+}
+
+.instrument-value {
+  font-family: var(--font-mono);
+  font-size: 19px;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+.instrument-value[data-muted="true"] {
+  color: var(--ink-quaternary);
+}
+
+.instrument-label {
+  font-size: 9.5px;
+  font-weight: 560;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-tertiary);
+  margin-top: 3px;
+}
+
+/* ---- specification list -------------------------------------------------
+   Model provenance as a spec sheet: a quiet key column, a strong value, and a
+   monospace digest beneath it. */
+
+.spec {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--s5) var(--s6);
+}
+
+.spec-key {
+  font-size: 9.5px;
+  font-weight: 560;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-tertiary);
+}
+
+.spec-value {
+  font-size: 15px;
+  font-weight: 550;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  margin-top: 4px;
+}
+
+.spec-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-tertiary);
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+}
+
+/* ---- evidence sheet -----------------------------------------------------
+   The one surface that stays a sheet: it holds the artifact under
+   examination. */
+
+.sheet {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(16px) saturate(1.15);
+  -webkit-backdrop-filter: blur(16px) saturate(1.15);
+  border: 1px solid rgba(216, 234, 244, 0.9);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: var(--s5);
+  min-width: 0;
+}
+
+/* The Journey rail gets a faint daylight surface so it stays readable over
+   the photograph without becoming an opaque sidebar. */
+.rail-surface {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.62),
+    rgba(255, 255, 255, 0.34)
+  );
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: var(--radius-lg);
+  padding: var(--s4) var(--s4) var(--s5);
+  border: 1px solid rgba(216, 234, 244, 0.6);
+}
+
+/* ---- designed state block -----------------------------------------------
+   An unavailable or failed stage is a designed state, not a dumped error
+   string: a heading, one plain sentence, and what RAYA did not do. */
+
+.state-block {
+  display: grid;
+  gap: var(--s2);
+  padding: var(--s5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.state-block[data-tone="pending"] {
+  border-color: color-mix(in srgb, var(--pending) 32%, transparent);
+}
+
+.state-block[data-tone="rejected"] {
+  border-color: color-mix(in srgb, var(--rejected) 32%, transparent);
+}
+
+.state-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+
+.state-body {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-secondary);
+  max-width: 62ch;
+}
+
+.state-aside {
+  font-size: 12px;
+  color: var(--ink-tertiary);
+  margin-top: 2px;
+}
+
+/* ---- verification result: the climax ------------------------------------ */
+
+.result-sheet {
+  background: rgba(255, 255, 255, 0.93);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  border: 1px solid rgba(216, 234, 244, 0.95);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lift);
+  padding: clamp(var(--s5), 4vw, var(--s8));
+  min-width: 0;
+}
+
+.result-score {
+  font-family: var(--font-mono);
+  font-size: clamp(2.6rem, 6vw, 4.2rem);
+  font-weight: 560;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.proof-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--s5) var(--s7);
+}
+
+.proof-item {
+  display: flex;
+  gap: var(--s3);
+  align-items: baseline;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+/* ==========================================================================
    environment
 
    The photographic background, built as parallax layers. All layers are fixed

@@ -255,7 +255,12 @@ class Pipeline:
             )
             result.status = RunStatus.SEARCH_UNAVAILABLE
             result.add_error("search_prepare", "no_search_path", message, fatal=True)
-            bus.emit(EventType.STAGE_FAILED, stage="search_prepare", message=message)
+            bus.emit(
+            EventType.STAGE_FAILED,
+            stage="search_prepare",
+            code="no_public_url",
+            message=message,
+        )
             return None
 
         try:
@@ -263,7 +268,12 @@ class Pipeline:
         except RayaError as exc:
             result.status = RunStatus.SEARCH_UNAVAILABLE
             result.add_error("search_prepare", exc.code, exc.message, fatal=True)
-            bus.emit(EventType.STAGE_FAILED, stage="search_prepare", message=exc.message)
+            bus.emit(
+                EventType.STAGE_FAILED,
+                stage="search_prepare",
+                code=exc.code,
+                message=exc.message,
+            )
             return None
 
         result.search_copy = copy
@@ -301,7 +311,9 @@ class Pipeline:
         except SearchProviderNotConfiguredError as exc:
             result.status = RunStatus.SEARCH_UNAVAILABLE
             result.add_error("search", exc.code, exc.message, fatal=True)
-            bus.emit(EventType.STAGE_FAILED, stage="search", message=exc.message)
+            bus.emit(
+                EventType.STAGE_FAILED, stage="search", code=exc.code, message=exc.message
+            )
             return False
         except SearchProviderError as exc:
             result.status = RunStatus.SEARCH_UNAVAILABLE
@@ -392,7 +404,9 @@ class Pipeline:
             )
         except StorageError as exc:
             result.add_error("ipfs", exc.code, exc.message, fatal=False)
-            bus.emit(EventType.STAGE_FAILED, stage="ipfs", message=exc.message)
+            bus.emit(
+                EventType.STAGE_FAILED, stage="ipfs", code=exc.code, message=exc.message
+            )
             return
 
         result.storage = stored
@@ -407,7 +421,12 @@ class Pipeline:
                 "was not anchored. The face match above is unaffected."
             )
             result.add_error("anchor", "chain_not_configured", message, fatal=False)
-            bus.emit(EventType.STAGE_FAILED, stage="anchor", message=message)
+            bus.emit(
+                EventType.STAGE_FAILED,
+                stage="anchor",
+                code="chain_not_configured",
+                message=message,
+            )
             return
 
         bus.emit(
@@ -430,7 +449,9 @@ class Pipeline:
             )
         except (AnchorError, ChainNotConfiguredError) as exc:
             result.add_error("anchor", exc.code, exc.message, fatal=False)
-            bus.emit(EventType.STAGE_FAILED, stage="anchor", message=exc.message)
+            bus.emit(
+                EventType.STAGE_FAILED, stage="anchor", code=exc.code, message=exc.message
+            )
             return
 
         result.anchor = receipt
@@ -465,7 +486,12 @@ class Pipeline:
                 )
             except AnchorError as exc:
                 result.add_error("readback", exc.code, exc.message, fatal=False)
-                bus.emit(EventType.STAGE_FAILED, stage="readback", message=exc.message)
+                bus.emit(
+                    EventType.STAGE_FAILED,
+                    stage="readback",
+                    code=exc.code,
+                    message=exc.message,
+                )
 
         # Re-download the stored bundle so the IPFS copy is checked against the
         # local hash too, not merely assumed correct.

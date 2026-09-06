@@ -3,26 +3,21 @@
 /**
  * The verification workspace.
  *
- * Three columns answer three questions at all times: where are we (left), what
- * is happening (centre), and what technically happened (right). Everything in
- * all three is driven by the SSE event stream -- see `lib/usePipeline.ts`.
+ * Two columns: where the run is (Journey), and what is happening (main).
+ * Everything in both is driven by the SSE event stream -- see
+ * `lib/usePipeline.ts`. The run itself is rendered by `RunView`, which is
+ * shared with `/replay/[id]` so a recording looks exactly like the run it
+ * records.
  */
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { CandidateWall } from "@/components/CandidateWall";
 import { JourneyRail } from "@/components/JourneyRail";
-import { MatchReveal } from "@/components/MatchReveal";
 import { Nav } from "@/components/Nav";
+import { RunView } from "@/components/RunView";
 import { TechPanel } from "@/components/TechPanel";
-import { InputEvidence } from "@/components/InputEvidence";
-import { LineageStrip } from "@/components/LineageStrip";
-import { MatchPreview } from "@/components/MatchPreview";
-import { RunStatus } from "@/components/RunStatus";
 import { UploadZone } from "@/components/UploadZone";
-import { Empty, Pill } from "@/components/atoms";
 import { api } from "@/lib/api";
 import type { RayaConfig, UploadResult } from "@/lib/types";
 import { usePipeline } from "@/lib/usePipeline";
@@ -60,108 +55,77 @@ export default function VerifyPage() {
       <div className="workspace">
         {/* ---- left: where are we -------------------------------------- */}
         <div className="workspace-rail">
-          <JourneyRail state={state} />
-
-          {verificationId && (
-            <p
-              className="mono"
-              title={verificationId}
-              style={{
-                marginTop: "var(--s5)",
-                fontSize: 10,
-                lineHeight: 1.4,
-                color: "var(--ink-quaternary)",
-                overflowWrap: "anywhere",
-              }}
-            >
-              {verificationId}
-            </p>
-          )}
+          <div className="rail-surface">
+            <JourneyRail state={state} />
+          </div>
         </div>
 
         {/* ---- centre: what is happening ------------------------------- */}
         <div className="workspace-main">
           {configError && (
-            <div className="card" style={{ padding: "var(--s4)", borderColor: "var(--rejected)" }}>
-              <p style={{ margin: 0, fontSize: 13.5, color: "var(--rejected)" }}>{configError}</p>
-            </div>
-          )}
-
-          {!searchReady && !verificationId && (
-            <div className="card" style={{ padding: "var(--s4)", borderColor: "var(--pending)" }}>
-              <p style={{ margin: 0, fontSize: 13.5, fontWeight: 560 }}>
-                Reverse image search is not configured.
-              </p>
-              <p className="body" style={{ marginTop: 4, fontSize: 13 }}>
-                Set <code className="mono">SERPAPI_KEY</code> in <code className="mono">.env</code>{" "}
-                to run a real search. RAYA will not fabricate candidates, so a run
-                will stop at the search stage and say so.
-              </p>
+            <div className="state-block" data-tone="rejected">
+              <p className="state-title">API unreachable</p>
+              <p className="state-body">{configError}</p>
             </div>
           )}
 
           {!verificationId && (
             <>
-              <div>
-                <h1 className="h1" style={{ maxWidth: 560 }}>
+              <div style={{ paddingTop: "var(--s4)" }}>
+                <h1 className="h1" style={{ maxWidth: 600 }}>
                   Verify an image.
                 </h1>
-                <p className="lede" style={{ marginTop: "var(--s3)", maxWidth: 520 }}>
-                  RAYA detects the face, searches the public web, and independently
-                  verifies each candidate before preserving what it found.
+                <p className="lede" style={{ marginTop: "var(--s4)", maxWidth: 540 }}>
+                  RAYA detects the face, searches the public web, and
+                  independently verifies each candidate before preserving what it
+                  found.
                 </p>
               </div>
+
+              {!searchReady && (
+                <div className="state-block" data-tone="pending">
+                  <p className="state-title">Search not configured</p>
+                  <p className="state-body">
+                    No reverse image search provider is configured, so a run will
+                    stop after encoding the face.
+                  </p>
+                  <p className="state-aside">
+                    No candidates will be fabricated. RAYA performs a real search
+                    or none at all.
+                  </p>
+                </div>
+              )}
+
               <UploadZone
                 onStart={(id, context) => {
                   setInputContext(context);
                   setVerificationId(id);
                 }}
               />
+
+              {/* Before a run there is no instrument to read, so the models
+                  and thresholds this deployment will use are shown instead. */}
+              <section className="section" style={{ marginTop: "var(--s5)" }}>
+                <div className="section-head">
+                  <h2 className="section-title">Model provenance</h2>
+                  <p className="section-note">
+                    The exact weight files behind every score
+                  </p>
+                </div>
+                <TechPanel state={state} config={config} />
+              </section>
             </>
           )}
 
           {verificationId && (
             <>
-              {/* Input evidence beside live run status: what is being
-                  verified, and where the pipeline has actually got to. */}
-              <div className="panel-grid">
-                {inputContext ? (
-                  <section className="panel" aria-label="Input evidence panel">
-                    <InputEvidence
-                      upload={inputContext.upload}
-                      previewUrl={inputContext.previewUrl}
-                      fileName={inputContext.fileName}
-                      status={
-                        state.failure
-                          ? "FAILED"
-                          : state.stages.face?.state === "done"
-                            ? "COMPLETE"
-                            : "RUNNING"
-                      }
-                    />
-                  </section>
-                ) : (
-                  <div />
-                )}
-                <div style={{ display: "grid", gap: "var(--s4)", minWidth: 0 }}>
-                  <RunStatus state={state} verificationId={verificationId} />
-                  <section className="panel" aria-label="Technical panel">
-                    <div className="panel-head">
-                      <h2 className="panel-title">Technical</h2>
-                    </div>
-                    <TechPanel state={state} config={config} />
-                  </section>
-                </div>
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "var(--s3)", flexWrap: "wrap" }}>
-                {!state.finished ? (
-                  <Pill tone="pending">Running</Pill>
-                ) : state.match ? (
-                  <Pill tone="verified">Verified visual match</Pill>
-                ) : (
-                  <Pill tone="neutral">Complete</Pill>
-                )}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  paddingTop: "var(--s4)",
+                }}
+              >
                 <button
                   type="button"
                   className="btn btn-ghost btn-sm"
@@ -174,107 +138,32 @@ export default function VerifyPage() {
                 </button>
               </div>
 
-              {/* Failure and degraded states, stated plainly */}
               <AnimatePresence>
                 {state.failure && (
                   <motion.div
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="card"
-                    style={{ padding: "var(--s5)", borderColor: "var(--rejected)" }}
+                    className="state-block"
+                    data-tone="rejected"
                   >
-                    <p className="h3">{failureHeadline(state.failure.code)}</p>
-                    <p className="body" style={{ marginTop: "var(--s2)", fontSize: 13.5 }}>
-                      {state.failure.message}
-                    </p>
+                    <p className="state-title">{failureHeadline(state.failure.code)}</p>
+                    <p className="state-body">{state.failure.message}</p>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              {state.warnings.length > 0 && (
-                <div style={{ display: "grid", gap: "var(--s2)" }}>
-                  {state.warnings.map((warning, i) => (
-                    <p
-                      key={i}
-                      style={{ margin: 0, fontSize: 12.5, color: "var(--pending)" }}
-                    >
-                      {warning.stage}: {warning.message}
-                    </p>
-                  ))}
-                </div>
-              )}
-
-              {/* A comparison panel appears as soon as anything has been
-                  scored -- including a rejection, which is a real result. */}
-              {(state.match || state.candidates.some((c) => c.status === "rejected")) && (
-                <MatchPreview
-                  state={state}
-                  verificationId={verificationId}
-                  threshold={threshold}
-                />
-              )}
-
-              {/* The full reveal, only for an actual verified match. */}
-              {state.match && (
-                <MatchReveal
-                  state={state}
-                  verificationId={verificationId}
-                  threshold={threshold}
-                />
-              )}
-
-              {/* No match, but the pipeline ran */}
-              {state.finished && !state.match && !state.failure && state.searchCounts && (
-                <div className="card" style={{ padding: "var(--s5)" }}>
-                  <p className="h3">No verified public social source found.</p>
-                  <p className="body" style={{ marginTop: "var(--s2)", fontSize: 13.5 }}>
-                    {state.candidates.filter((c) => c.is_social).length} social
-                    candidate(s) were evaluated and none cleared the{" "}
-                    {threshold.toFixed(2)} similarity threshold. Absence of a match
-                    is not evidence that no such source exists.
-                  </p>
-                  <Link
-                    href={`/evidence/${verificationId}`}
-                    className="btn btn-ghost btn-sm"
-                    style={{ marginTop: "var(--s4)" }}
-                  >
-                    View evidence
-                  </Link>
-                </div>
-              )}
-
-              {/* Candidates */}
-              {state.candidates.length > 0 && (
-                <CandidateWall
-                  candidates={state.candidates}
-                  threshold={threshold}
-                  evaluating={state.evaluating}
-                  matchId={state.match?.id}
-                  verificationId={verificationId}
-                  focusMatch={Boolean(state.match) && state.finished}
-                />
-              )}
-
-              {state.candidates.length === 0 && !state.failure && !state.finished && (
-                <Empty>Waiting for the search provider…</Empty>
-              )}
-
-              <LineageStrip state={state} />
+              <RunView
+                state={state}
+                verificationId={verificationId}
+                config={config}
+                threshold={threshold}
+                upload={inputContext?.upload ?? null}
+                previewUrl={inputContext?.previewUrl ?? null}
+                fileName={inputContext?.fileName ?? null}
+              />
             </>
           )}
-
-          {/* Before a run starts there is no run panel, so Technical still
-              needs a home: it shows the configured models and thresholds. */}
-          {!verificationId && (
-            <section className="panel" aria-label="Technical panel">
-              <div className="panel-head">
-                <h2 className="panel-title">Technical</h2>
-              </div>
-              <TechPanel state={state} config={config} />
-            </section>
-          )}
         </div>
-
       </div>
 
       <footer
@@ -288,10 +177,10 @@ export default function VerifyPage() {
           flexWrap: "wrap",
         }}
       >
-        <span className="mono" style={{ fontSize: 11, color: "var(--ink-quaternary)" }}>
+        <span className="mono" style={{ fontSize: 11, color: "var(--ink-tertiary)" }}>
           RAYA · Visual evidence verification
         </span>
-        <span className="mono" style={{ fontSize: 11, color: "var(--ink-quaternary)" }}>
+        <span className="mono" style={{ fontSize: 11, color: "var(--ink-tertiary)" }}>
           A similarity score is not an identity.
         </span>
       </footer>
