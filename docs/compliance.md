@@ -11,7 +11,7 @@ that proves it, so a reviewer can check a claim without reading the whole tree.
 |---|-------------|---------------|-------|
 | 1 | Detect a face in the input image | YuNet (OpenCV Zoo `2023mar`, SHA-256 pinned) | `core/raya/face/detector.py` · `TestDetection` (8 tests) |
 | 2 | Encode the face | SFace (`2021dec`), 128-d, cosine | `core/raya/face/encoder.py` · `TestEncoding` (5 tests) |
-| 3 | Genuine reverse image search | Google Lens via SerpApi, behind `ReverseSearchProvider` | `core/raya/search/serpapi.py` |
+| 3 | Genuine reverse image search | Google Lens via SerpApi: bounded copy uploaded to `POST /image`, then Lens queried by `image_id`. Original input never published. | `core/raya/search/serpapi.py`, `search/searchcopy.py` · `tests/test_search_copy.py` (25 tests) |
 | 4 | Find a matching public social post | Platform classifier + runtime retrieval + independent comparison | `core/raya/candidates/` · `TestFullRun` |
 | 5 | No hardcoded results | `NullProvider` raises `SearchProviderNotConfiguredError`; there is no code path that invents a candidate | `core/raya/search/fallback.py` · run without `SERPAPI_KEY` |
 | 6 | Blockchain record | Core Testnet2 (chain id 1114), write-once contract | `blockchain/contracts/RayaEvidenceAnchor.sol` · 17 contract tests |
@@ -20,6 +20,30 @@ that proves it, so a reviewer can check a claim without reading the whole tree.
 | 9 | Run instructions | README "Run it locally" | verified from a clean clone |
 | 10 | Documented limitations | Shipped in-product *and* in docs | `docs/limitations.md` · `/about` · `claim` block in every bundle |
 | 11 | End-to-end demonstration | Five cases, real pipeline | `python demo/run_demo.py` |
+| 12 | Threshold justified empirically | 88 portraits, 23 identities, 3,828 pairs; FMR 0.0000 at 0.40 | `benchmarks/calibrate.py` · `docs/threshold-calibration.md` |
+| 13 | Model provenance reproducible | Detector and encoder file SHA-256 in every record | `core/raya/face/*.py` · evidence `verification.detector/encoder` |
+
+### Live execution status
+
+The requirement list above distinguishes **implemented and tested** from
+**executed against live third-party services**. As of this revision:
+
+| Stage | Implemented | Tested | Executed live |
+|-------|:---:|:---:|:---:|
+| Face detection / encoding | yes | yes | yes |
+| Bounded search copy | yes | yes | yes |
+| SerpApi upload -> `image_id` -> Lens | yes | yes (mock transport) | **no — needs `SERPAPI_KEY`** |
+| Real social candidate | yes | yes (fixture) | **no — depends on live search** |
+| Independent verification | yes | yes | yes (local sources) |
+| Evidence + canonical hash | yes | yes | yes |
+| IPFS pinning | yes | yes | **no — needs `PINATA_JWT`** |
+| Core Testnet2 deploy + anchor | yes | yes (Hardhat chain) | **no — needs funded key** |
+| Fresh read-back + integrity | yes | yes | **no — depends on anchor** |
+| Tamper detection | yes | yes | yes (local) |
+
+Nothing in the "no" column is simulated to look otherwise: an unconfigured
+capability is reported as UNAVAILABLE or NOT RUN in the UI and omitted from the
+evidence record.
 
 ---
 
@@ -67,7 +91,8 @@ Four independent properties, each tested:
 | 01 Input validation and hashing | `util/imaging.py`, `util/hashing.py` | yes |
 | 02 Face detection | `face/detector.py` | yes |
 | 03 Face encoding | `face/encoder.py` | yes |
-| 04 Reverse search | `search/` | yes |
+| 04a Bounded search copy | `search/searchcopy.py` | yes |
+| 04 Reverse search (upload -> image_id) | `search/` | yes |
 | 05 Candidate filtering | `candidates/platforms.py` | yes |
 | 06 Independent verification | `candidates/verifier.py` | per candidate |
 | 07 Evidence construction | `evidence/schema.py` | yes |
@@ -113,9 +138,11 @@ tests/test_face.py           21   detection, encoding, similarity separation
 tests/test_evidence.py       32   canonicalization, hashing, integrity, tamper, CID
 tests/test_candidates.py     33   platform classification, SSRF guard, filtering
 tests/test_pipeline.py       23   end-to-end runs, failure modes, events, persistence
+tests/test_search_copy.py    25   search-copy bounds/determinism, upload, image_id,
+                                  expiry, provider failures, credential absence
 tests/test_contract_abi.py   17   Python ABI vs compiled artifact, bp round-trip
                             ---
-                            126   plus 17 Solidity tests
+                            151   150 passing, 1 skipped, plus 17 Solidity tests
 ```
 
 Run with `pytest` and `cd blockchain && npm test`.

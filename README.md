@@ -114,6 +114,24 @@ is no silent fallback.
 > not private — the derivative is processed by a third party. The face embedding
 > never leaves the machine at all.
 
+### IPFS (evidence preservation)
+
+IPFS stores the finished evidence record. It is **not** a prerequisite for
+search — nothing is published in order to make an image searchable.
+
+```bash
+# Option A: a pinning service (recommended for a real run)
+PINATA_JWT=...            # evidence is pinned; CID resolves publicly
+
+# Option B: a local node
+IPFS_PROVIDER=kubo        # requires `ipfs daemon` on 127.0.0.1:5001
+
+# Option C: nothing configured
+# A genuine CIDv1 is computed and the bundle written to .raya-data/ipfs,
+# but published=false and the UI shows IPFS as UNAVAILABLE. Nothing is
+# claimed to be on the network that is not.
+```
+
 ---
 
 ## Blockchain
@@ -206,16 +224,24 @@ Nothing in the verification path is mocked. `tests/test_pipeline.py` runs the
 real models against real photographs served over a real HTTP server; only the
 paid search API is replaced, with a recorded fixture.
 
-The measured baseline the whole product rests on:
+The measured baseline the whole product rests on, from 88 public-domain
+portraits across 23 identities (3,828 pairs — `python benchmarks/calibrate.py`):
 
-| Pair | Similarity | Verdict |
-|------|-----------|---------|
-| Same person, different photo | **0.79** | pass |
-| Different people | **0.15** / **0.23** | reject |
+| | Value |
+|---|---|
+| Highest impostor score across 3,700 pairs | **0.3773** |
+| False match rate at 0.40 | **0.0000** |
+| False non-match rate at 0.40 | 0.2031 |
+| Equal error rate | 0.0465 at threshold 0.26 |
 
-The 0.40 threshold sits in that margin. If the encoder stopped separating
-people, every layer downstream would faithfully preserve a meaningless result —
-so this is asserted, not assumed.
+0.40 is set to drive false matches to zero, not to minimise total error: a false
+match publishes and anchors a claim about a person, whereas a false non-match
+says "no verified source found", which the product already states is not
+evidence of absence.
+
+Method and caveats: [docs/threshold-calibration.md](docs/threshold-calibration.md).
+It is an empirical operating point for this model and set — not a universal
+constant, and not proof of identity.
 
 ---
 
@@ -273,6 +299,23 @@ appears anywhere in it.
 | Limitations | Documented and shipped in-product | `docs/limitations.md` |
 
 Detailed mapping: [docs/compliance.md](docs/compliance.md).
+
+---
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| `ModelMissingError` on startup | ONNX models not fetched | `python scripts/fetch_models.py` |
+| Run stops at `search_unavailable` | No `SERPAPI_KEY` | Add the key to `.env`. This is correct behaviour, not a bug — RAYA never fabricates candidates. |
+| `Search copy is N KB; the provider limit is 500 KB` | Input produced an oversized derivative | Should not occur; `benchmarks/calibrate.py` and the test suite bound this. File an issue with the image dimensions. |
+| IPFS shows `UNAVAILABLE` with a CID present | No pinning service configured | Set `PINATA_JWT`, or run a local `ipfs daemon` with `IPFS_PROVIDER=kubo`. |
+| `RPC reports chain id X, but CHAIN_ID is configured as 1114` | Pointing at the wrong network | Check `CHAIN_RPC_URL`. RAYA refuses to anchor to an unexpected chain rather than writing to the wrong one. |
+| `insufficient tCORE2 for gas` | Unfunded deployer key | Fund the address at <https://scan.test2.btcs.network/faucet>. |
+| `this verification id is already anchored` | Re-anchoring an existing run | Expected: records are write-once by design. |
+| Frontend can't reach the API | API not on port 8000 | `NEXT_PUBLIC_API_URL` is resolved at **build** time — set it before `npm run build`, not before `npm start`. |
+| No faces found in a large photo | — | Detection is bounded to 1024 px on the long edge; very small faces in very large images may be missed. |
+| Zero candidates from a live search | Genuinely no indexed matches | Reported as `no_search_results`, distinct from `no_verified_match`. |
 
 ---
 

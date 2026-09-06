@@ -63,16 +63,22 @@ reverse. There is no threshold that eliminates both error types.
 The value in force is recorded in every evidence bundle and anchored with it, so
 a reader always knows what standard was applied.
 
-Measured separation on the bundled fixtures:
+Calibrated on 88 public-domain portraits across 23 identities (3,828 pairs):
 
-| Pair | Similarity |
-|------|-----------|
-| Same person, different photograph | 0.79 |
-| Different people | 0.15, 0.23 |
+| | Value |
+|---|---|
+| Highest impostor score observed | 0.3773 |
+| FMR at 0.40 | 0.0000 (0 of 3,700) |
+| FNMR at 0.40 | 0.2031 |
+| Equal error rate | 0.0465, at threshold 0.26 |
 
-The threshold sits in that gap. A test asserts the gap stays wider than 0.3, so
-a regression in the encoder fails the build rather than silently degrading
-results.
+0.40 is chosen to drive false matches to zero rather than to minimise total
+error, because RAYA's two failure modes are not symmetric: a false match
+publishes and anchors a claim about a person, while a false non-match produces
+"no verified source found", which is already stated not to be evidence of
+absence. The cost is roughly one genuine pair in five missed.
+
+Full method, sweep and caveats: [threshold-calibration.md](threshold-calibration.md).
 
 ## 4. Coverage is bounded by the search provider
 

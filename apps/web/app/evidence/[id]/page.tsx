@@ -15,7 +15,7 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import { Nav } from "@/components/Nav";
 import { SearchLineage } from "@/components/SearchLineage";
-import { CopyHash, Divider, Empty, Field, Pill } from "@/components/atoms";
+import { CopyHash, Divider, Empty, Field, Pill, Receipt } from "@/components/atoms";
 import { api, ApiError } from "@/lib/api";
 import {
   formatBytes,
@@ -100,6 +100,22 @@ export default function EvidencePage({ params }: { params: Promise<{ id: string 
   }
 
   const match = result.match;
+  // Each line is bound to something the run actually achieved, so a partial
+  // run shows a partial list rather than a uniform wall of ticks.
+  const PROVES: [string, boolean][] = [
+    ["A candidate source was discovered.", Boolean(result.search)],
+    ["A face was detected locally.", result.faces.length > 0],
+    ["The candidate exceeded the configured similarity threshold.", Boolean(result.match)],
+    ["Evidence was canonically generated.", Boolean(result.evidence)],
+    ["Evidence was hashed.", Boolean(result.evidence)],
+    ["Evidence was preserved on IPFS.", Boolean(result.storage?.published)],
+    ["Evidence was anchored on chain.", Boolean(result.anchor)],
+    ["The on-chain commitment was read back.", Boolean(result.onchain)],
+    [
+      "Local and on-chain hashes matched.",
+      Boolean(result.integrity?.anchored && result.integrity?.verified),
+    ],
+  ];
   const anchored = Boolean(result.anchor);
   // Model provenance lives in the evidence record itself, so what is shown
   // here is exactly what was hashed and (when anchored) committed.
@@ -350,128 +366,221 @@ export default function EvidencePage({ params }: { params: Promise<{ id: string 
         </section>
 
         {/* ---- inspector ---------------------------------------------- */}
+        {/* ---- forensic receipt ---------------------------------------- */}
         <section style={{ marginTop: "var(--s7)" }}>
-          <Divider label="Inspector" />
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
-              gap: "var(--s4)",
-              marginTop: "var(--s4)",
-            }}
-          >
-            <Field label="Created" value={formatTime(result.created_at)} mono={false} />
-            <Field label="Duration" value={formatDuration(result.duration_ms)} />
-            <Field label="Schema" value={result.evidence?.schema_version ?? "—"} />
-            <Field label="Input SHA-256" value={shortHash(result.input.sha256, 14, 8)} title={result.input.sha256} />
-            <Field label="Input size" value={formatBytes(result.input.byte_size)} />
-            <Field
-              label="Dimensions"
-              value={`${result.input.width} × ${result.input.height}`}
-            />
-            <Field
-              label="Search copy SHA-256"
-              value={
-                result.search_copy ? shortHash(result.search_copy.sha256, 14, 8) : "not created"
-              }
-              title={result.search_copy?.sha256}
-            />
-            <Field
-              label="Search copy size"
-              value={
-                result.search_copy
-                  ? `${result.search_copy.width} × ${result.search_copy.height} · ${formatBytes(result.search_copy.byte_size)}`
-                  : "not created"
-              }
-            />
-            <Field label="Search provider" value={result.search?.provider ?? "not run"} />
-            <Field
-              label="Search time"
-              value={result.search ? formatTime(result.search.queried_at) : "not run"}
-              mono={false}
-            />
-            <Field
-              label="Result position"
-              value={match ? `#${match.position}` : "n/a"}
-            />
-            <Field
-              label="Detector"
-              value={
-                detector ? `${detector.name} ${detector.version}` : "—"
-              }
-            />
-            <Field
-              label="Detector model SHA-256"
-              value={detector?.model_sha256 ? shortHash(detector.model_sha256, 12, 8) : "—"}
-              title={detector?.model_sha256 ?? undefined}
-            />
-            <Field
-              label="Face model"
-              value={encoder ? `${encoder.name} ${encoder.version} · ${encoder.dim}d` : "—"}
-            />
-            <Field
-              label="Face model SHA-256"
-              value={encoder?.model_sha256 ? shortHash(encoder.model_sha256, 12, 8) : "—"}
-              title={encoder?.model_sha256 ?? undefined}
-            />
-            <Field label="Metric" value={encoder?.metric ?? "cosine"} />
-            <Field label="Results" value={String(result.counts.results)} />
-            <Field label="Social candidates" value={String(result.counts.social)} />
-            <Field label="Compared" value={String(result.counts.compared)} />
-            <Field label="Rejected" value={String(result.counts.rejected)} tone="rejected" />
-            <Field
-              label="IPFS CID"
-              value={
-                result.storage ? (
-                  result.storage.gateway_url ? (
-                    <a
-                      href={result.storage.gateway_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ textDecoration: "underline", textUnderlineOffset: 3 }}
-                    >
-                      {shortHash(result.storage.cid, 12, 8)} ↗
-                    </a>
-                  ) : (
-                    shortHash(result.storage.cid, 12, 8)
-                  )
-                ) : (
-                  "—"
-                )
-              }
-              tone={result.storage && !result.storage.published ? "pending" : undefined}
-            />
-            <Field label="Chain" value={result.anchor?.chain_name ?? "not anchored"} tone={anchored ? undefined : "pending"} />
-            <Field
-              label="Contract"
-              value={shortHash(result.anchor?.contract_address, 10, 8)}
-              title={result.anchor?.contract_address}
-            />
-            <Field
-              label="Transaction"
-              value={
-                result.anchor ? (
-                  <a
-                    href={result.anchor.explorer_tx_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ textDecoration: "underline", textUnderlineOffset: 3 }}
-                  >
-                    {shortHash(result.anchor.tx_hash, 10, 8)} ↗
-                  </a>
-                ) : (
-                  "—"
-                )
-              }
-            />
-            <Field label="Block" value={result.anchor ? `#${result.anchor.block_number}` : "—"} />
-          </div>
+          <Divider label="Observed" />
+          <p className="body" style={{ margin: "var(--s3) 0 var(--s4)", fontSize: 12.5 }}>
+            What RAYA received and measured directly.
+          </p>
+          <Receipt
+            rows={[
+              ["Verification ID", result.verification_id, result.verification_id],
+              ["Created", formatTime(result.created_at)],
+              ["Input SHA-256", shortHash(result.input.sha256, 20, 12), result.input.sha256],
+              ["Input size", formatBytes(result.input.byte_size)],
+              ["Input dimensions", `${result.input.width} x ${result.input.height}`],
+              ["Input type", result.input.mime],
+            ]}
+          />
+        </section>
 
-          {result.storage && !result.storage.published && result.storage.detail && (
-            <p style={{ marginTop: "var(--s4)", fontSize: 13, color: "var(--pending)" }}>
-              {result.storage.detail}
+        <section style={{ marginTop: "var(--s6)" }}>
+          <Divider label="Derived" />
+          <p className="body" style={{ margin: "var(--s3) 0 var(--s4)", fontSize: 12.5 }}>
+            Artifacts RAYA produced from the input, and what was sent outward.
+          </p>
+          <Receipt
+            rows={[
+              [
+                "Search copy SHA-256",
+                result.search_copy ? shortHash(result.search_copy.sha256, 20, 12) : "NOT CREATED",
+                result.search_copy?.sha256,
+              ],
+              [
+                "Search copy",
+                result.search_copy
+                  ? `${result.search_copy.width} x ${result.search_copy.height} - ${formatBytes(result.search_copy.byte_size)} - q${result.search_copy.jpeg_quality}`
+                  : "NOT CREATED",
+              ],
+              ["Search provider", result.search?.provider ?? "NOT RUN"],
+              ["Search time", result.search ? formatTime(result.search.queried_at) : "NOT RUN"],
+              ["Result position", match ? `#${match.position}` : "N/A"],
+              ["Candidates", result.search ? String(result.counts.results) : "NOT RUN"],
+              ["Social candidates", result.search ? String(result.counts.social) : "NOT RUN"],
+              ["Compared", result.search ? String(result.counts.compared) : "NOT RUN"],
+            ]}
+          />
+        </section>
+
+        <section style={{ marginTop: "var(--s6)" }}>
+          <Divider label="Verified" />
+          <p className="body" style={{ margin: "var(--s3) 0 var(--s4)", fontSize: 12.5 }}>
+            The independent comparison, and the exact models that performed it.
+          </p>
+          <Receipt
+            rows={[
+              ["Source platform", match?.platform_label ?? "NONE VERIFIED"],
+              ["Source URL", match?.page_url ?? "NONE VERIFIED", match?.page_url ?? undefined],
+              [
+                "Source image URL",
+                match?.image_url ?? "NONE VERIFIED",
+                match?.image_url ?? undefined,
+              ],
+              [
+                "Source image SHA-256",
+                match?.image_sha256 ? shortHash(match.image_sha256, 20, 12) : "NOT RETRIEVED",
+                match?.image_sha256 ?? undefined,
+              ],
+              ["Detector", detector ? `${detector.name} ${detector.version}` : "unknown"],
+              [
+                "Detector model SHA-256",
+                detector?.model_sha256 ? shortHash(detector.model_sha256, 16, 10) : "unknown",
+                detector?.model_sha256 ?? undefined,
+              ],
+              [
+                "Face model",
+                encoder ? `${encoder.name} ${encoder.version} - ${encoder.dim}d` : "unknown",
+              ],
+              [
+                "Face model SHA-256",
+                encoder?.model_sha256 ? shortHash(encoder.model_sha256, 16, 10) : "unknown",
+                encoder?.model_sha256 ?? undefined,
+              ],
+              ["Metric", encoder?.metric ?? "cosine"],
+              [
+                "Threshold",
+                (match?.verdict?.threshold ?? verification.threshold ?? 0.4).toFixed(2),
+              ],
+              [
+                "Similarity",
+                result.similarity != null ? formatSimilarity(result.similarity) : "NOT RUN",
+              ],
+              [
+                "Decision",
+                result.similarity == null
+                  ? "NOT RUN"
+                  : match
+                    ? "PASS - verified visual match"
+                    : "REJECT - below threshold",
+              ],
+            ]}
+          />
+        </section>
+
+        <section style={{ marginTop: "var(--s6)" }}>
+          <Divider label="Anchored" />
+          <p className="body" style={{ margin: "var(--s3) 0 var(--s4)", fontSize: 12.5 }}>
+            Where the evidence was preserved and committed.
+          </p>
+          <Receipt
+            rows={[
+              [
+                "Evidence SHA-256",
+                result.evidence ? shortHash(result.evidence.sha256, 20, 12) : "NOT CREATED",
+                result.evidence?.sha256,
+              ],
+              [
+                "IPFS CID",
+                result.storage
+                  ? result.storage.published
+                    ? shortHash(result.storage.cid, 14, 10)
+                    : `${shortHash(result.storage.cid, 14, 10)} (local only)`
+                  : "NOT CREATED",
+                result.storage?.cid,
+              ],
+              ["Network", result.anchor?.chain_name ?? "NOT RUN"],
+              [
+                "Contract",
+                result.anchor ? shortHash(result.anchor.contract_address, 12, 10) : "NOT RUN",
+                result.anchor?.contract_address,
+              ],
+              [
+                "Transaction",
+                result.anchor ? shortHash(result.anchor.tx_hash, 14, 10) : "NOT RUN",
+                result.anchor?.tx_hash,
+              ],
+              ["Block", result.anchor ? `#${result.anchor.block_number}` : "NOT RUN"],
+            ]}
+          />
+        </section>
+
+        <section style={{ marginTop: "var(--s6)" }}>
+          <Divider label="Integrity checked" />
+          <p className="body" style={{ margin: "var(--s3) 0 var(--s4)", fontSize: 12.5 }}>
+            The fresh read-back, and what it compared.
+          </p>
+          <Receipt
+            rows={[
+              [
+                "On-chain evidence hash",
+                result.onchain ? shortHash(result.onchain.evidence_hash, 20, 12) : "NOT READ BACK",
+                result.onchain?.evidence_hash,
+              ],
+              [
+                "Read-back",
+                result.onchain
+                  ? result.onchain.evidence_hash.replace(/^0x/, "").toLowerCase() ===
+                    result.evidence?.sha256
+                    ? "MATCH"
+                    : "MISMATCH"
+                  : "NOT RUN",
+              ],
+              [
+                "Integrity",
+                result.integrity?.anchored && result.integrity?.verified
+                  ? "VERIFIED"
+                  : "NOT VERIFIED",
+              ],
+            ]}
+          />
+          {result.integrity && (
+            <p className="body" style={{ marginTop: "var(--s4)", fontSize: 13 }}>
+              {result.integrity.summary}
             </p>
           )}
+        </section>
+
+        {/* ---- what this proves, and what it does not ------------------- */}
+        <section style={{ marginTop: "var(--s7)" }}>
+          <Divider label="What this proves" />
+          <div style={{ display: "grid", gap: "var(--s2)", marginTop: "var(--s4)", maxWidth: 640 }}>
+            {PROVES.map(([label, ok]) => (
+              <div key={label} style={{ display: "flex", gap: "var(--s3)" }}>
+                <span
+                  aria-hidden
+                  style={{
+                    width: 12,
+                    fontSize: 13,
+                    color: ok ? "var(--verified)" : "var(--ink-quaternary)",
+                  }}
+                >
+                  {ok ? "✓" : "·"}
+                </span>
+                <span style={{ fontSize: 13.5, color: ok ? "var(--ink)" : "var(--ink-quaternary)" }}>
+                  {label}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <p className="label" style={{ marginTop: "var(--s6)" }}>
+            What this does not prove
+          </p>
+          <div style={{ display: "grid", gap: "var(--s2)", marginTop: "var(--s3)", maxWidth: 640 }}>
+            {[
+              "The real-world identity of any person.",
+              "The authenticity of the underlying source.",
+              "That no unindexed source exists.",
+              "Certainty beyond the limitations of the face model.",
+            ].map((line) => (
+              <div key={line} style={{ display: "flex", gap: "var(--s3)" }}>
+                <span aria-hidden style={{ width: 12, fontSize: 13, color: "var(--ink-quaternary)" }}>
+                  &times;
+                </span>
+                <span style={{ fontSize: 13.5, color: "var(--ink-secondary)" }}>{line}</span>
+              </div>
+            ))}
+          </div>
         </section>
 
         {/* ---- rejected candidates ------------------------------------ */}

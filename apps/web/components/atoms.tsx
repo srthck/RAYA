@@ -228,3 +228,52 @@ export function StatusBlock({
     </div>
   );
 }
+
+/**
+ * A forensic receipt block: aligned label/value rows, values monospaced and
+ * selectable, long digests wrapped rather than truncated out of existence.
+ *
+ * Each row is `[label, value, fullValue?]`. When `fullValue` is given the row
+ * becomes click-to-copy, because these are numbers a reviewer checks against
+ * `sha256sum` or an explorer and a partial copy is worse than none.
+ */
+export function Receipt({
+  rows,
+}: {
+  rows: Array<[string, React.ReactNode, (string | null | undefined)?]>;
+}) {
+  return (
+    <div style={{ display: "grid", gap: 0 }}>
+      {rows.map(([label, value, full], index) => (
+        <div
+          key={label}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(140px, 34%) minmax(0, 1fr)",
+            gap: "var(--s4)",
+            padding: "7px 0",
+            borderTop: index === 0 ? "1px solid var(--line)" : "none",
+            borderBottom: "1px solid var(--line)",
+            alignItems: "baseline",
+          }}
+        >
+          <span className="label" style={{ letterSpacing: "0.08em" }}>
+            {label}
+          </span>
+          <span style={{ minWidth: 0 }}>
+            {full ? (
+              <CopyHash value={full} display={String(value)} />
+            ) : (
+              <span
+                className="mono"
+                style={{ fontSize: 12.5, color: "var(--ink)", overflowWrap: "anywhere" }}
+              >
+                {value}
+              </span>
+            )}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
