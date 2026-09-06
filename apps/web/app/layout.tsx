@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 
+import { Environment } from "@/components/Environment";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,12 +22,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        {/* Decorative only: a fixed field of soft blue light behind all
-            content. It never encodes state, and it is pointer-events:none so
-            it cannot affect layout or interaction. */}
-        <div className="atmosphere" aria-hidden="true">
-          <span />
-        </div>
+        {/* The photographic environment: fixed parallax layers behind all
+            content. Decorative only -- it never encodes pipeline state, and it
+            is pointer-events:none so it cannot affect layout or interaction. */}
+        <Environment />
         {children}
       </body>
     </html>

@@ -31,3 +31,8 @@ Thumbs.db
 
 # Hardhat deployment records are environment-specific
 blockchain/deployments/
+
+# Full-resolution environment source (2.6 MB). The optimised WebP derivatives
+# in apps/web/public are what ship; regenerate them with
+# scripts/build_environment.py.
+assets/environment-source.png

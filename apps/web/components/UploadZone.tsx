@@ -111,13 +111,22 @@ export function UploadZone({ onStart, disabled, disabledReason }: Props) {
             if (e.key === "Enter" || e.key === " ") inputRef.current?.click();
           }}
           style={{
-            border: `1px ${dragging ? "solid" : "dashed"} ${dragging ? "var(--ink)" : "var(--line-strong)"}`,
+            border: `1px ${dragging ? "solid" : "dashed"} ${dragging ? "var(--accent)" : "var(--line-strong)"}`,
             borderRadius: "var(--radius-lg)",
-            background: dragging ? "var(--bg-inset)" : "transparent",
+            // A readability surface: the drop zone sits over a photograph, and
+            // transparent text on water is unreadable. Translucent rather than
+            // opaque, so the environment still shows through.
+            background: dragging
+              ? "rgba(232, 246, 253, 0.92)"
+              : "rgba(255, 255, 255, 0.82)",
+            backdropFilter: "blur(12px) saturate(1.15)",
+            WebkitBackdropFilter: "blur(12px) saturate(1.15)",
+            boxShadow: dragging ? "var(--shadow-lift)" : "var(--shadow)",
             padding: "clamp(56px, 16vh, 140px) var(--s5)",
             textAlign: "center",
             cursor: busy ? "wait" : "pointer",
-            transition: "background var(--dur) var(--ease), border-color var(--dur) var(--ease)",
+            transition:
+              "background var(--dur) var(--ease), border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease)",
           }}
         >
           <p className="label" style={{ marginBottom: "var(--s3)" }}>
