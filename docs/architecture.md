@@ -179,7 +179,7 @@ time.
 
 ## Testing
 
-123 Python tests plus 17 Solidity tests. Nothing in the verification path is
+126 Python tests plus 17 Solidity tests. Nothing in the verification path is
 mocked: `tests/test_pipeline.py` runs the real models against real photographs
 served over a real HTTP server on an ephemeral port. Only the paid search API is
 replaced, with a recorded fixture.

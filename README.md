@@ -161,7 +161,7 @@ raya/
   apps/api/           FastAPI + SSE event stream
   apps/web/           Next.js workspace
   blockchain/         Solidity + Hardhat
-  tests/              123 tests
+  tests/              126 tests
   demo/               five demonstration cases
   docs/               architecture, limitations, threat model, compliance
 ```
@@ -194,7 +194,7 @@ compute the same digest; that is the entire basis of the tamper-evidence claim.
 ## Tests
 
 ```bash
-pytest                        # 123 tests (1 skipped)
+pytest                        # 126 tests (1 skipped)
 cd blockchain && npm test     # contract tests
 ```
 

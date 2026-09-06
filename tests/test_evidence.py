@@ -133,6 +133,34 @@ class TestIntegrity:
         report = check_integrity(bundle, onchain_hash="c" * 64)
         assert "failed" in report.summary().lower()
 
+    def test_self_consistency_alone_is_not_called_verified(self, bundle):
+        """Re-hashing our own bytes proves only that this process did not
+        corrupt them. Saying "integrity verified" on that basis would be the
+        exact overclaim the project exists to avoid."""
+        report = check_integrity(bundle, onchain_hash=None, ipfs_bytes=None)
+        summary = report.summary()
+
+        assert not report.independently_checked
+        assert "Integrity verified" not in summary
+        assert "self-consistent" in summary
+        assert "nothing independent was checked" in summary
+
+    def test_summary_names_the_independent_source(self, bundle):
+        chain_only = check_integrity(bundle, onchain_hash=bundle.sha256)
+        assert chain_only.independently_checked
+        assert "Integrity verified" in chain_only.summary()
+        assert "on-chain anchor" in chain_only.summary()
+
+        both = check_integrity(bundle, bundle.sha256, ipfs_bytes=bundle.canonical)
+        assert "on-chain anchor" in both.summary()
+        assert "IPFS" in both.summary()
+
+    def test_ipfs_alone_counts_as_independent(self, bundle):
+        report = check_integrity(bundle, onchain_hash=None, ipfs_bytes=bundle.canonical)
+        assert report.independently_checked
+        assert not report.anchored
+        assert "IPFS" in report.summary()
+
 
 class TestTamperDetection:
     @pytest.fixture

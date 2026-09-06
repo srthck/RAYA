@@ -65,16 +65,41 @@ class IntegrityReport:
     def anchored(self) -> bool:
         return any(c.name == "chain_match" and c.performed and c.passed for c in self.checks)
 
+    @property
+    def independently_checked(self) -> bool:
+        """Whether any copy held by someone other than us was compared.
+
+        Self-consistency is not independence: re-hashing our own bytes proves
+        only that this process did not corrupt them. It is the chain and IPFS
+        checks that make the claim meaningful.
+        """
+        return any(
+            c.name in ("chain_match", "ipfs_match") and c.performed for c in self.checks
+        )
+
     def summary(self) -> str:
         if not self.performed:
             return "No integrity checks could be performed."
-        if self.verified:
+
+        if not self.verified:
+            failed = [c.label for c in self.performed if not c.passed]
+            return "Integrity check failed: " + "; ".join(failed) + "."
+
+        # Everything that ran passed -- but say exactly what ran. Reporting
+        # "integrity verified" for a run with no external copy to compare
+        # against would be the precise overclaim this project exists to avoid.
+        if not self.independently_checked:
             return (
-                "Integrity verified: the local evidence hash matches every "
-                "independently retrieved copy."
+                "The local record is self-consistent, but it was not anchored or "
+                "retrieved from storage, so nothing independent was checked."
             )
-        failed = [c.label for c in self.performed if not c.passed]
-        return "Integrity check failed: " + "; ".join(failed) + "."
+
+        sources = []
+        if any(c.name == "chain_match" and c.performed for c in self.checks):
+            sources.append("the on-chain anchor")
+        if any(c.name == "ipfs_match" and c.performed for c in self.checks):
+            sources.append("the copy stored on IPFS")
+        return "Integrity verified: the local evidence hash matches " + " and ".join(sources) + "."
 
     def to_dict(self) -> dict[str, Any]:
         return {

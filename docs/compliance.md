@@ -50,6 +50,8 @@ Four independent properties, each tested:
 1. **Determinism** — the same logical record always produces the same bytes.
    `TestCanonicalJson` (9 tests) covers key order, whitespace, float precision,
    negative zero, NaN rejection and round-tripping.
+   `TestIntegrity` additionally asserts that a run with nothing external to
+   compare against is *not* described as "integrity verified".
 2. **Immutability of the anchor** — `anchor()` reverts on an existing id, from
    any account, leaving the original intact.
 3. **Read-back** — a fresh `eth_call` after confirmation, compared to the local
@@ -98,7 +100,8 @@ success or a generic error.
 | All candidates rejected | `no_verified_match` | Evidence still produced |
 | Source unreachable | per-candidate `unreachable` | Run continues; never trusts the provider's thumbnail |
 | IPFS unavailable | non-fatal | Local CID, `published: false` |
-| Chain unavailable | `verified_not_anchored` | Match preserved, anchor reported failed |
+| Chain unavailable | `verified_not_anchored` | Match preserved, reported as not anchored |
+| Nothing external to compare | `verified_not_anchored` | Reported as self-consistent only — never "integrity verified" |
 | Hash mismatch | `integrity.failed` | Reported, never suppressed |
 
 ---
@@ -107,12 +110,12 @@ success or a generic error.
 
 ```
 tests/test_face.py           21   detection, encoding, similarity separation
-tests/test_evidence.py       29   canonicalization, hashing, integrity, tamper, CID
+tests/test_evidence.py       32   canonicalization, hashing, integrity, tamper, CID
 tests/test_candidates.py     33   platform classification, SSRF guard, filtering
 tests/test_pipeline.py       23   end-to-end runs, failure modes, events, persistence
 tests/test_contract_abi.py   17   Python ABI vs compiled artifact, bp round-trip
                             ---
-                            123   plus 17 Solidity tests
+                            126   plus 17 Solidity tests
 ```
 
 Run with `pytest` and `cd blockchain && npm test`.
