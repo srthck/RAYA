@@ -107,13 +107,25 @@ export function MatchReveal({
             {formatSimilarity(similarity)}
           </motion.div>
           <p className="label" style={{ marginTop: "var(--s2)" }}>
-            SFace cosine
+            Similarity
           </p>
           <p
             className="mono"
             style={{ fontSize: 11, color: "var(--ink-tertiary)", marginTop: 2 }}
           >
             threshold {threshold.toFixed(2)}
+          </p>
+          <p
+            className="mono"
+            style={{
+              fontSize: 11,
+              fontWeight: 560,
+              letterSpacing: "0.08em",
+              color: "var(--verified)",
+              marginTop: "var(--s2)",
+            }}
+          >
+            DECISION · PASS
           </p>
         </div>
 
@@ -125,6 +137,26 @@ export function MatchReveal({
           }
           caption="Source face"
         />
+      </div>
+
+      {/* The line the whole product turns on, placed where a reader is most
+          likely to over-read the score. */}
+      <div
+        style={{
+          borderLeft: "2px solid var(--line-strong)",
+          paddingLeft: "var(--s4)",
+          maxWidth: 560,
+        }}
+      >
+        <p className="h3" style={{ letterSpacing: "-0.02em" }}>
+          Discovery isn&apos;t proof.
+        </p>
+        <p className="body" style={{ marginTop: "var(--s2)", fontSize: 13.5 }}>
+          The search engine proposed this candidate. RAYA re-downloaded the
+          source image and independently compared the detected face against it.
+          That comparison — not the search result — is what produced the score
+          above.
+        </p>
       </div>
 
       {/* ---- the source ---------------------------------------------- */}
@@ -155,6 +187,7 @@ export function MatchReveal({
       </div>
 
       {/* ---- what was established ------------------------------------ */}
+      <p className="label">What this proves</p>
       <div style={{ display: "grid", gap: "var(--s2)", maxWidth: 620 }}>
         <Checklist label="Discovered by reverse image search" ok />
         <Checklist label="Public social source" ok={match.is_social} />
@@ -184,6 +217,27 @@ export function MatchReveal({
           ok={Boolean(integrityVerified)}
           degraded={!integrityVerified}
         />
+      </div>
+
+      {/* Given equal weight, deliberately: the limits are as much a part of
+          the result as the score. */}
+      <div style={{ maxWidth: 620 }}>
+        <p className="label">What this does not prove</p>
+        <div style={{ display: "grid", gap: "var(--s2)", marginTop: "var(--s3)" }}>
+          {[
+            "The real-world identity of any person.",
+            "That the source post is authentic or unaltered.",
+            "That no other, unindexed source exists.",
+            "Certainty beyond the limits of the face model.",
+          ].map((line) => (
+            <div key={line} style={{ display: "flex", gap: "var(--s3)" }}>
+              <span aria-hidden style={{ color: "var(--ink-quaternary)", width: 12, fontSize: 13 }}>
+                &times;
+              </span>
+              <span style={{ fontSize: 13.5, color: "var(--ink-secondary)" }}>{line}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div style={{ display: "flex", gap: "var(--s2)", flexWrap: "wrap" }}>

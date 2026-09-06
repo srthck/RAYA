@@ -14,6 +14,7 @@ import cv2
 import numpy as np
 
 from ..config import Settings, get_settings
+from ..util.hashing import sha256_file
 from ..errors import RayaError
 from .base import FaceDetector
 from .types import DetectedFace, FaceQuality
@@ -44,6 +45,7 @@ class YuNetDetector(FaceDetector):
                 path=str(path),
             )
         self._path = str(path)
+        self._model_digest: str | None = None
         # The OpenCV detector object is stateful (setInputSize mutates it), so
         # calls are serialized. Detection is milliseconds; this is not a
         # throughput bottleneck and it avoids a whole class of race condition.
@@ -56,6 +58,20 @@ class YuNetDetector(FaceDetector):
             nms_threshold=self.settings.face_nms_threshold,
             top_k=self.settings.face_top_k,
         )
+
+    def model_sha256(self) -> str | None:
+        """SHA-256 of the ONNX file backing this instance.
+
+        Computed once and cached: it identifies the exact weights that produced
+        every score in the evidence, and it is what makes a published
+        similarity independently reproducible.
+        """
+        if self._model_digest is None:
+            try:
+                self._model_digest = sha256_file(self._path)
+            except OSError:
+                self._model_digest = ""
+        return self._model_digest or None
 
     def detect(self, bgr: np.ndarray) -> list[DetectedFace]:
         """Detect faces, returning coordinates in the original image space.

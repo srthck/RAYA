@@ -116,10 +116,16 @@ Bundles are published to IPFS. Content-addressed storage has no delete, and
 pinning services replicate. This is why bundles contain hashes, public URLs,
 scores and model names — never face images or embeddings.
 
-The same property applies to the input: to reverse-search a local image at all,
-it must be reachable by the search provider, so RAYA publishes it to IPFS first.
-**If you do not want an image published, do not run a search on it.** This is
-stated in the UI before a run and in the README.
+The input is handled differently, and the distinction matters. RAYA does **not**
+publish the original image anywhere. It hashes the original locally, then
+derives a separate bounded copy and uploads only that to the search provider.
+Two objects, two digests, both recorded in the evidence.
+
+**Reverse image search is still not private.** The derivative leaves the machine
+and is processed by a third party under their terms. If you do not want an image
+sent to a search provider, do not run a search on it. What RAYA guarantees is
+narrower and precise: the original bytes are never republished, and the face
+embedding never leaves the machine at all.
 
 ## 8. Deepfakes and synthetic images are out of scope
 

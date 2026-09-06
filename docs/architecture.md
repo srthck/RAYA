@@ -70,8 +70,8 @@ Implemented in `core/raya/pipeline/orchestrator.py`.
 | 01 | Input | Validate, decode, EXIF-orient, SHA-256 | no |
 | 02 | Detection | YuNet; 0 faces stops, >1 asks | no |
 | 03 | Encoding | Align + SFace 128-d embedding | no |
-| 04a | Search prep | Publish input to IPFS for a fetchable URL | no |
-| 04 | Search | Real provider call | no |
+| 04a | Search copy | Build a bounded, deterministic derivative | no |
+| 04 | Search | Upload the copy, search by `image_id` | no |
 | 05 | Filtering | Platform classification | no |
 | 06 | Verification | Retrieve, detect, encode, compare — per candidate | per candidate |
 | 07 | Evidence | Canonical JSON + SHA-256 | no |
@@ -86,15 +86,27 @@ specific reason lands in `result.errors`. A face match and a blockchain anchor
 are separate claims, and a failure in the second must not weaken or strengthen
 the first.
 
-### Why searching needs IPFS first
+### The search copy, and why the original is never published
 
-Google Lens takes a **URL**, not an upload. A locally supplied image therefore
-cannot be reverse-searched as-is. RAYA publishes the input to IPFS and hands the
-provider the gateway URL — solving the problem with a dependency the pipeline
-already has.
+SerpApi's `POST /image` endpoint accepts the image bytes directly and returns an
+`image_id` that the Lens engine takes in place of `url`. So nothing has to be
+publicly hosted to be searchable.
 
-The privacy consequence is stated plainly in the UI and README: running a search
-publishes the image.
+What is uploaded is a *derivative*, never the original:
+
+| Object | Hash | Leaves the machine? |
+|--------|------|--------------------|
+| Original input | `input.sha256` | no — hashed locally, never republished |
+| Bounded search copy | `search_copy.sha256` | yes — uploaded to the provider |
+
+The copy is produced deterministically (`search/searchcopy.py`) by walking a
+fixed edge ladder then a fixed quality ladder, so the same input always yields
+byte-identical output and the recorded digest is reproducible. It must fit
+SerpApi's 500 KB upload ceiling; a 4.5 MB portrait comes out at ~316 KB.
+
+Keeping the two apart is what lets the evidence say exactly what was sent
+without muddling it with the canonical input. IPFS is an evidence-preservation
+layer only — never a prerequisite for search.
 
 ### Why detection is bounded to 1024 px
 

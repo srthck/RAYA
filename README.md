@@ -7,7 +7,9 @@ INPUT
   |
 FACE                    YuNet detection, SFace encoding -- both local
   |
-REVERSE SEARCH          Google Lens via SerpApi, behind a provider interface
+SEARCH COPY             bounded, deterministic derivative -- the original is never published
+  |
+REVERSE SEARCH          direct upload -> image_id -> Google Lens (SerpApi)
   |
 INDEPENDENT VERIFICATION    we re-download and re-compare, ourselves
   |
@@ -104,11 +106,13 @@ unavailable. **It never fabricates candidates to fill the gap.**
 Every degraded state is surfaced in the UI and recorded in the evidence. There
 is no silent fallback.
 
-> **A constraint worth knowing up front:** Google Lens is given a *URL*, not an
-> upload, so a local image cannot be reverse-searched as-is. RAYA publishes the
-> input to IPFS first and searches the gateway URL. If you do not want an image
-> published, do not run a search on it. Set `PUBLIC_BASE_URL` instead if the API
-> is itself internet-reachable.
+> **What leaves the machine:** RAYA hashes the original input locally and never
+> republishes it. To search, it derives a separate bounded copy (deterministic,
+> under SerpApi's 500 KB upload limit), uploads *that* directly for an
+> `image_id`, and queries Lens by id. Both objects are hashed and recorded, so
+> the evidence is unambiguous about what was sent. Reverse image search is still
+> not private — the derivative is processed by a third party. The face embedding
+> never leaves the machine at all.
 
 ---
 

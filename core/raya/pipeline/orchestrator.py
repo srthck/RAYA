@@ -1,10 +1,14 @@
 """The RAYA pipeline.
 
-Eleven stages, run in order, each one emitting events as it goes:
+Twelve stages, run in order, each one emitting events as it goes:
 
-    input -> face detection -> face encoding -> reverse search ->
-    candidate filtering -> independent verification -> evidence ->
-    IPFS -> anchor -> read-back -> integrity
+    input -> face detection -> face encoding -> bounded search copy ->
+    reverse search -> candidate filtering -> independent verification ->
+    evidence -> IPFS -> anchor -> read-back -> integrity
+
+IPFS is an evidence-preservation layer here, never a prerequisite for search.
+The original input is never published in order to make it searchable: a
+separate bounded derivative is uploaded directly to the search provider.
 
 Two principles are enforced here rather than left to the individual stages.
 
@@ -48,6 +52,7 @@ from ..face.encoder import SFaceEncoder
 from ..face.types import DetectedFace, FaceEmbedding
 from ..search.base import ReverseSearchProvider
 from ..search.registry import build_provider
+from ..search.searchcopy import SearchCopy, build_search_copy
 from ..storage.ipfs import EvidenceStore, build_store
 from ..util.hashing import sha256_bytes
 from ..util.imaging import decode_image, encode_jpeg
@@ -138,11 +143,11 @@ class Pipeline:
     ) -> None:
         subject, decoded = await self._stage_face(image_bytes, face_index, bus, result)
 
-        search_url = await self._stage_prepare_search(image_bytes, decoded, bus, result)
-        if search_url is None:
+        search_copy = await self._stage_prepare_search(image_bytes, decoded, bus, result)
+        if search_copy is None:
             return
 
-        if not await self._stage_search(search_url, bus, result):
+        if not await self._stage_search(search_copy, bus, result):
             return
 
         await self._stage_verify(subject, bus, result)
@@ -226,7 +231,7 @@ class Pipeline:
         )
         return embedding, decoded
 
-    # -- stage 04a: make the input searchable -------------------------------
+    # -- stage 04a: prepare the search derivative ---------------------------
 
     async def _stage_prepare_search(
         self,
@@ -234,68 +239,65 @@ class Pipeline:
         decoded: Any,
         bus: EventBus,
         result: VerificationResult,
-    ) -> Optional[str]:
-        """Produce a publicly fetchable URL for the input image.
+    ) -> Optional[SearchCopy]:
+        """Build the bounded copy that will be sent to the search provider.
 
-        Google Lens is given a URL, not an upload, so a local file cannot be
-        searched as-is. Publishing the input to IPFS solves this with a
-        dependency the pipeline already has. When neither a public base URL nor
-        a real pinning service is configured, we stop and say so rather than
-        pretend a search happened.
+        The original input is never published or re-encoded: its bytes are what
+        `input.sha256` commits to. What leaves the machine is a separate,
+        deterministically encoded derivative, hashed and recorded in its own
+        right so the provenance chain stays honest about exactly what was sent.
         """
-        if not self.provider.requires_public_url:
-            return f"local://{result.input['sha256']}"
-
-        if self.settings.public_base_url:
-            url = (
-                f"{self.settings.public_base_url.rstrip('/')}"
-                f"/v1/verifications/{result.verification_id}/input"
-            )
-            bus.emit(EventType.SEARCH_PREPARING, method="public_base_url", url=url)
-            return url
-
-        bus.emit(EventType.SEARCH_PREPARING, method="ipfs")
-        try:
-            stored = await self.store.put(image_bytes, filename="input-image")
-        except StorageError as exc:
-            result.status = RunStatus.SEARCH_UNAVAILABLE
-            result.add_error("search_prepare", "storage_error", exc.message, fatal=True)
-            bus.emit(EventType.STAGE_FAILED, stage="search_prepare", message=exc.message)
-            return None
-
-        if not stored.published or not stored.gateway_url:
+        if not self.provider.supports_direct_upload and not self.settings.public_base_url:
             message = (
-                "The reverse image search needs a publicly reachable image URL, but no "
-                "IPFS pinning service or PUBLIC_BASE_URL is configured. Set PINATA_JWT "
-                "or PUBLIC_BASE_URL. RAYA will not fabricate search results."
+                "The configured search provider cannot accept a direct image upload, "
+                "and PUBLIC_BASE_URL is not set, so there is no way to run a real "
+                "search. RAYA will not fabricate results."
             )
             result.status = RunStatus.SEARCH_UNAVAILABLE
-            result.add_error("search_prepare", "no_public_url", message, fatal=True)
+            result.add_error("search_prepare", "no_search_path", message, fatal=True)
             bus.emit(EventType.STAGE_FAILED, stage="search_prepare", message=message)
             return None
 
-        result.input["ipfs_cid"] = stored.cid
+        try:
+            copy = await asyncio.to_thread(build_search_copy, decoded.bgr)
+        except RayaError as exc:
+            result.status = RunStatus.SEARCH_UNAVAILABLE
+            result.add_error("search_prepare", exc.code, exc.message, fatal=True)
+            bus.emit(EventType.STAGE_FAILED, stage="search_prepare", message=exc.message)
+            return None
+
+        result.search_copy = copy
         bus.emit(
             EventType.SEARCH_PREPARING,
-            method="ipfs",
-            cid=stored.cid,
-            url=stored.gateway_url,
+            method="direct_upload" if self.provider.supports_direct_upload else "public_url",
+            search_copy=copy.to_dict(),
+            input_sha256=result.input["sha256"],
         )
-        return stored.gateway_url
+        return copy
 
     # -- stages 04-05: search and filtering ---------------------------------
 
     async def _stage_search(
-        self, search_url: str, bus: EventBus, result: VerificationResult
+        self, copy: SearchCopy, bus: EventBus, result: VerificationResult
     ) -> bool:
         bus.emit(
             EventType.SEARCH_STARTED,
             provider=self.provider.name,
             display_name=self.provider.display_name,
-            query_image_url=search_url,
+            method="direct_upload" if self.provider.supports_direct_upload else "public_url",
+            search_copy_sha256=copy.sha256,
+            search_copy_bytes=copy.byte_size,
         )
         try:
-            response = await self.provider.search(search_url)
+            if self.provider.supports_direct_upload:
+                response = await self.provider.search_image(copy.data, copy.mime)
+            else:
+                # Fallback: the API is itself internet-reachable and serves the
+                # derivative at a stable URL.
+                response = await self.provider.search(
+                    f"{self.settings.public_base_url.rstrip('/')}"
+                    f"/v1/verifications/{result.verification_id}/search-copy"
+                )
         except SearchProviderNotConfiguredError as exc:
             result.status = RunStatus.SEARCH_UNAVAILABLE
             result.add_error("search", exc.code, exc.message, fatal=True)
@@ -369,7 +371,7 @@ class Pipeline:
             detector_info=self.detector.describe(),
             encoder_info=self.encoder.describe(),
             threshold=self.settings.similarity_threshold,
-            input_ipfs_cid=result.input.get("ipfs_cid"),
+            search_copy=result.search_copy,
         )
         bundle = EvidenceBundle.create(record)
         result.evidence = bundle
@@ -442,12 +444,25 @@ class Pipeline:
 
         onchain_hash: Optional[str] = None
         if result.anchor is not None:
+            # A distinct stage, and a distinct event: reading the value back off
+            # the chain is what turns "we sent a transaction" into evidence.
+            bus.emit(
+                EventType.READBACK_STARTED,
+                contract=self.settings.contract_address,
+                verification_id=result.verification_id,
+            )
             try:
                 record = await asyncio.to_thread(
                     self.anchor.read_record, result.verification_id
                 )
                 result.onchain = record
                 onchain_hash = record.evidence_hash
+                bus.emit(
+                    EventType.READBACK_COMPLETED,
+                    onchain_evidence_hash=record.evidence_hash,
+                    local_evidence_hash=result.evidence.sha256,
+                    matches=_strip0x(record.evidence_hash) == result.evidence.sha256,
+                )
             except AnchorError as exc:
                 result.add_error("readback", exc.code, exc.message, fatal=False)
                 bus.emit(EventType.STAGE_FAILED, stage="readback", message=exc.message)
@@ -498,6 +513,10 @@ class Pipeline:
             status=result.status.value,
             **exc.context,
         )
+
+
+def _strip0x(value: str) -> str:
+    return value[2:].lower() if value.startswith("0x") else value.lower()
 
 
 def _face_preview(bgr, face: DetectedFace) -> Optional[bytes]:

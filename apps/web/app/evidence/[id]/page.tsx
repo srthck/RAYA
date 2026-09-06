@@ -14,6 +14,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { Nav } from "@/components/Nav";
+import { SearchLineage } from "@/components/SearchLineage";
 import { CopyHash, Divider, Empty, Field, Pill } from "@/components/atoms";
 import { api, ApiError } from "@/lib/api";
 import {
@@ -31,6 +32,7 @@ export default function EvidencePage({ params }: { params: Promise<{ id: string 
   const { id } = use(params);
 
   const [result, setResult] = useState<VerificationResult | null>(null);
+  const [evidenceRecord, setEvidenceRecord] = useState<Record<string, any> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tamper, setTamper] = useState<TamperResult | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -43,6 +45,12 @@ export default function EvidencePage({ params }: { params: Promise<{ id: string 
       .catch((err) =>
         setError(err instanceof ApiError ? err.message : "Could not load this verification."),
       );
+    // Read the canonical record for model provenance. A failure here is not
+    // fatal: a run that produced no evidence simply has none to show.
+    fetch(api.evidenceUrl(id, true))
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setEvidenceRecord)
+      .catch(() => undefined);
   }, [id]);
 
   const runTamper = useCallback(async () => {
@@ -93,6 +101,15 @@ export default function EvidencePage({ params }: { params: Promise<{ id: string 
 
   const match = result.match;
   const anchored = Boolean(result.anchor);
+  // Model provenance lives in the evidence record itself, so what is shown
+  // here is exactly what was hashed and (when anchored) committed.
+  const verification = (evidenceRecord?.verification ?? {}) as Record<string, any>;
+  const detector = verification.detector as
+    | { name: string; version: string; model_sha256?: string | null }
+    | undefined;
+  const encoder = verification.encoder as
+    | { name: string; version: string; dim: number; metric: string; model_sha256?: string | null }
+    | undefined;
 
   return (
     <main className="shell" style={{ paddingBottom: "var(--s9)" }}>
@@ -320,6 +337,18 @@ export default function EvidencePage({ params }: { params: Promise<{ id: string 
           </section>
         )}
 
+        {/* ---- provenance ---------------------------------------------- */}
+        <section style={{ marginTop: "var(--s7)" }}>
+          <Divider label="Evidence lineage" />
+          <p className="body" style={{ margin: "var(--s4) 0 var(--s5)", fontSize: 13.5, maxWidth: 620 }}>
+            Where this result came from, end to end. Note that the original
+            input and the bounded search copy are separate objects with separate
+            digests: the original was hashed locally and never published, and
+            only the derivative was sent to the search provider.
+          </p>
+          <SearchLineage result={result} />
+        </section>
+
         {/* ---- inspector ---------------------------------------------- */}
         <section style={{ marginTop: "var(--s7)" }}>
           <Divider label="Inspector" />
@@ -340,7 +369,52 @@ export default function EvidencePage({ params }: { params: Promise<{ id: string 
               label="Dimensions"
               value={`${result.input.width} × ${result.input.height}`}
             />
-            <Field label="Search provider" value={result.search?.provider ?? "—"} />
+            <Field
+              label="Search copy SHA-256"
+              value={
+                result.search_copy ? shortHash(result.search_copy.sha256, 14, 8) : "not created"
+              }
+              title={result.search_copy?.sha256}
+            />
+            <Field
+              label="Search copy size"
+              value={
+                result.search_copy
+                  ? `${result.search_copy.width} × ${result.search_copy.height} · ${formatBytes(result.search_copy.byte_size)}`
+                  : "not created"
+              }
+            />
+            <Field label="Search provider" value={result.search?.provider ?? "not run"} />
+            <Field
+              label="Search time"
+              value={result.search ? formatTime(result.search.queried_at) : "not run"}
+              mono={false}
+            />
+            <Field
+              label="Result position"
+              value={match ? `#${match.position}` : "n/a"}
+            />
+            <Field
+              label="Detector"
+              value={
+                detector ? `${detector.name} ${detector.version}` : "—"
+              }
+            />
+            <Field
+              label="Detector model SHA-256"
+              value={detector?.model_sha256 ? shortHash(detector.model_sha256, 12, 8) : "—"}
+              title={detector?.model_sha256 ?? undefined}
+            />
+            <Field
+              label="Face model"
+              value={encoder ? `${encoder.name} ${encoder.version} · ${encoder.dim}d` : "—"}
+            />
+            <Field
+              label="Face model SHA-256"
+              value={encoder?.model_sha256 ? shortHash(encoder.model_sha256, 12, 8) : "—"}
+              title={encoder?.model_sha256 ?? undefined}
+            />
+            <Field label="Metric" value={encoder?.metric ?? "cosine"} />
             <Field label="Results" value={String(result.counts.results)} />
             <Field label="Social candidates" value={String(result.counts.social)} />
             <Field label="Compared" value={String(result.counts.compared)} />

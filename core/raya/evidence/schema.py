@@ -32,8 +32,8 @@ from ..candidates.types import Candidate, CandidateStatus
 from ..search.base import SearchResponse
 from ..util.hashing import sha256_canonical
 
-SCHEMA_VERSION = "1.0"
-PIPELINE_VERSION = "1.0.0"
+SCHEMA_VERSION = "1.1"
+PIPELINE_VERSION = "1.1.0"
 
 
 def new_verification_id() -> str:
@@ -53,7 +53,7 @@ def build_evidence_record(
     detector_info: dict[str, Any],
     encoder_info: dict[str, Any],
     threshold: float,
-    input_ipfs_cid: Optional[str] = None,
+    search_copy: Any = None,
 ) -> dict[str, Any]:
     """Assemble the canonical evidence record for one verification run."""
 
@@ -71,12 +71,15 @@ def build_evidence_record(
                 "input",
                 "face_detection",
                 "face_encoding",
+                "search_copy",
                 "reverse_search",
                 "candidate_filtering",
                 "independent_verification",
                 "evidence",
             ],
         },
+        # The canonical input: exactly the bytes the user supplied, never
+        # re-encoded. `search_copy` below is a different object entirely.
         "input": {
             "sha256": input_meta["sha256"],
             "byte_size": input_meta["byte_size"],
@@ -84,12 +87,17 @@ def build_evidence_record(
             "width": input_meta["width"],
             "height": input_meta["height"],
             "face": input_meta.get("face"),
-            "ipfs_cid": input_ipfs_cid,
         },
+        # The bounded derivative that was sent to the search provider. Recorded
+        # so a reader knows precisely what left the machine -- and can tell it
+        # apart from the input that was hashed.
+        "search_copy": search_copy.to_dict() if search_copy is not None else None,
         "search": _search_block(search, candidates, social),
         "candidates": [_candidate_block(c) for c in candidates],
         "match": _match_block(match),
         "verification": {
+            # Model provenance: name, version and the SHA-256 of the weight
+            # file, so a published similarity is reproducible.
             "detector": detector_info,
             "encoder": encoder_info,
             "metric": encoder_info.get("metric", "cosine"),

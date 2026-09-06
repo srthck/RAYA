@@ -133,6 +133,18 @@ export interface StageError {
   fatal: boolean;
 }
 
+export interface SearchCopy {
+  sha256: string;
+  mime: string;
+  width: number;
+  height: number;
+  byte_size: number;
+  max_edge: number;
+  jpeg_quality: number;
+  resized: boolean;
+  note: string;
+}
+
 export interface VerificationResult {
   verification_id: string;
   created_at: number;
@@ -151,6 +163,7 @@ export interface VerificationResult {
   };
   faces: DetectedFace[];
   selected_face_index: number | null;
+  search_copy: SearchCopy | null;
   search: {
     provider: string;
     query_image_url: string;

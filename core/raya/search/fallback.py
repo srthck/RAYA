@@ -20,12 +20,17 @@ import time
 from pathlib import Path
 
 from ..errors import SearchProviderError, SearchProviderNotConfiguredError
+from ..util.hashing import sha256_bytes
 from .base import ReverseSearchProvider, SearchResponse, SearchResult
 
 
 class NullProvider(ReverseSearchProvider):
     name = "unconfigured"
     display_name = "No search provider configured"
+    # Advertised as available so the pipeline reaches the search stage and
+    # fails there with a specific reason, rather than stopping earlier with a
+    # vague "no search path" message.
+    supports_direct_upload = True
 
     def __init__(self, reason: str = "No reverse image search provider is configured."):
         self.reason = reason
@@ -37,11 +42,18 @@ class NullProvider(ReverseSearchProvider):
     async def search(self, image_url: str) -> SearchResponse:
         raise SearchProviderNotConfiguredError(self.reason)
 
+    async def search_image(self, data: bytes, mime: str = "image/jpeg") -> SearchResponse:
+        # Same refusal by either route: no key, no search, no invented results.
+        raise SearchProviderNotConfiguredError(self.reason)
+
 
 class ReplayProvider(ReverseSearchProvider):
     name = "replay"
     display_name = "Recorded search (replay)"
     requires_public_url = False
+    # A recorded response is served whatever the input method, so the replay
+    # provider exercises the same direct-upload path the live provider uses.
+    supports_direct_upload = True
 
     def __init__(self, fixture_path: str | Path):
         self.fixture_path = Path(fixture_path)
@@ -49,6 +61,17 @@ class ReplayProvider(ReverseSearchProvider):
     @property
     def configured(self) -> bool:
         return self.fixture_path.exists()
+
+    async def search_image(self, data: bytes, mime: str = "image/jpeg") -> SearchResponse:
+        """Serve the recorded response for an uploaded search copy.
+
+        The bytes are not sent anywhere; the copy's digest is recorded so a
+        replayed run still shows which derivative would have been uploaded.
+        """
+        response = await self.search(f"upload:{sha256_bytes(data)}")
+        response.provider_metadata["input_method"] = "direct_upload"
+        response.provider_metadata["search_copy_sha256"] = sha256_bytes(data)
+        return response
 
     async def search(self, image_url: str) -> SearchResponse:
         if not self.fixture_path.exists():

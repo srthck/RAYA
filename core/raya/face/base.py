@@ -23,7 +23,19 @@ class FaceDetector(ABC):
         """Return every face found, ordered largest first."""
 
     def describe(self) -> dict:
-        return {"name": self.name, "version": self.version}
+        """Identify the model *and* the exact file that produced the scores.
+
+        The evidence names the model; that claim is only reproducible if the
+        bytes behind the name are pinned too.
+        """
+        return {
+            "name": self.name,
+            "version": self.version,
+            "model_sha256": self.model_sha256(),
+        }
+
+    def model_sha256(self) -> str | None:
+        return None
 
 
 class FaceEncoder(ABC):
@@ -48,4 +60,8 @@ class FaceEncoder(ABC):
             "version": self.version,
             "dim": self.dim,
             "metric": self.metric,
+            "model_sha256": self.model_sha256(),
         }
+
+    def model_sha256(self) -> str | None:
+        return None

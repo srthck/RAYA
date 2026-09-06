@@ -21,6 +21,7 @@ import cv2
 import numpy as np
 
 from ..config import Settings, get_settings
+from ..util.hashing import sha256_file
 from ..errors import FaceTooSmallError
 from .base import FaceEncoder
 from .detector import ModelMissingError
@@ -45,8 +46,23 @@ class SFaceEncoder(FaceEncoder):
                 path=str(path),
             )
         self._path = str(path)
+        self._model_digest: str | None = None
         self._lock = threading.Lock()
         self._recognizer = cv2.FaceRecognizerSF.create(model=self._path, config="")
+
+    def model_sha256(self) -> str | None:
+        """SHA-256 of the ONNX file backing this instance.
+
+        Computed once and cached: it identifies the exact weights that produced
+        every score in the evidence, and it is what makes a published
+        similarity independently reproducible.
+        """
+        if self._model_digest is None:
+            try:
+                self._model_digest = sha256_file(self._path)
+            except OSError:
+                self._model_digest = ""
+        return self._model_digest or None
 
     # ---- encoding ----------------------------------------------------------
 

@@ -60,6 +60,61 @@ function ScoreBar({ value, threshold }: { value: number; threshold: number }) {
   );
 }
 
+/** One step of a candidate's lifecycle, with an explicit outcome. */
+function Step({
+  label,
+  state,
+}: {
+  label: string;
+  state: "pass" | "fail" | "skip";
+}) {
+  const glyph = state === "pass" ? "✓" : state === "fail" ? "✕" : "·";
+  const color =
+    state === "pass"
+      ? "var(--verified)"
+      : state === "fail"
+        ? "var(--rejected)"
+        : "var(--ink-quaternary)";
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--s2)" }}>
+      <span style={{ fontSize: 11.5, color: "var(--ink-tertiary)" }}>{label}</span>
+      <span aria-hidden style={{ fontSize: 11.5, color }}>
+        {glyph}
+      </span>
+      <span className="visually-hidden">{state}</span>
+    </div>
+  );
+}
+
+/**
+ * Derive the lifecycle from the candidate's terminal status.
+ *
+ * Each stage is pass / fail / not-reached, so a reviewer can see *where* a
+ * candidate dropped out rather than only that it did.
+ */
+function lifecycle(candidate: Candidate) {
+  const social = candidate.is_social;
+  const retrieved = Boolean(candidate.image_sha256);
+  const faceFound = candidate.face_count != null && candidate.face_count > 0;
+  const compared = candidate.verdict?.similarity != null;
+
+  return [
+    { label: "Public social source", state: social ? "pass" : "fail" },
+    {
+      label: "Image retrieved",
+      state: !social ? "skip" : retrieved ? "pass" : "fail",
+    },
+    {
+      label: "Face detected",
+      state: !retrieved ? "skip" : faceFound ? "pass" : "fail",
+    },
+    {
+      label: "Face compared",
+      state: !faceFound ? "skip" : compared ? "pass" : "fail",
+    },
+  ] as const;
+}
+
 export function CandidateTile({
   candidate,
   threshold,
@@ -150,6 +205,15 @@ export function CandidateTile({
         />
       )}
 
+      {/* The lifecycle: every candidate shows how far it got and why it
+          stopped. Failures stay visible -- hiding them would make the wall
+          look tidier and tell a reviewer nothing. */}
+      <div style={{ display: "grid", gap: 4 }}>
+        {lifecycle(candidate).map((step) => (
+          <Step key={step.label} label={step.label} state={step.state} />
+        ))}
+      </div>
+
       {similarity != null ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
@@ -167,6 +231,21 @@ export function CandidateTile({
             </span>
           </div>
           <ScoreBar value={similarity} threshold={threshold} />
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span className="mono" style={{ fontSize: 10.5, color: "var(--ink-quaternary)" }}>
+              threshold {threshold.toFixed(2)}
+            </span>
+            <span
+              className="mono"
+              style={{
+                fontSize: 10.5,
+                fontWeight: 560,
+                color: similarity >= threshold ? "var(--verified)" : "var(--rejected)",
+              }}
+            >
+              {similarity >= threshold ? "VERIFIED VISUAL MATCH" : "REJECTED"}
+            </span>
+          </div>
         </div>
       ) : (
         candidate.reason && (

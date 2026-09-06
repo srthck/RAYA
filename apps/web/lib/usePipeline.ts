@@ -22,10 +22,12 @@ import type { Candidate, DetectedFace, RayaEvent, VerificationResult } from "./t
 export type StageId =
   | "input"
   | "face"
-  | "search"
+  | "discover"
   | "verify"
   | "evidence"
-  | "anchor";
+  | "anchor"
+  | "readback"
+  | "integrity";
 
 export type StageState = "idle" | "active" | "done" | "failed" | "skipped";
 
@@ -36,13 +38,22 @@ export interface Stage {
   detail?: string;
 }
 
+/**
+ * The eight stages, in pipeline order.
+ *
+ * Discovery, verification, anchoring and integrity are deliberately separate
+ * steps rather than one "verified" bar: each makes a different claim, and
+ * collapsing them is exactly the overstatement RAYA exists to avoid.
+ */
 export const STAGE_ORDER: { id: StageId; label: string }[] = [
   { id: "input", label: "Input" },
   { id: "face", label: "Face" },
-  { id: "search", label: "Search" },
+  { id: "discover", label: "Discover" },
   { id: "verify", label: "Verify" },
   { id: "evidence", label: "Evidence" },
   { id: "anchor", label: "Anchor" },
+  { id: "readback", label: "Read-back" },
+  { id: "integrity", label: "Integrity" },
 ];
 
 export interface PipelineState {
@@ -57,6 +68,15 @@ export interface PipelineState {
   encoder?: { model: string; dim: number };
 
   searchProvider?: string;
+  searchCopy?: {
+    sha256: string;
+    byteSize: number;
+    width: number;
+    height: number;
+    quality: number;
+    resized: boolean;
+  };
+  searchMethod?: string;
   searchPreparing?: { method: string; cid?: string; url?: string };
   searchCounts?: { results: number; raw: number; durationMs: number; isReplay: boolean };
 
@@ -74,6 +94,7 @@ export interface PipelineState {
     chainName: string;
     gasUsed: number;
   };
+  readback?: { onchainHash: string; localHash: string; matches: boolean };
   integrity?: { verified: boolean; anchored: boolean; summary: string };
 
   failure?: { code: string; message: string; stage?: string };
@@ -156,13 +177,24 @@ export function reduceEvent(prev: PipelineState, event: RayaEvent): PipelineStat
       break;
 
     case "search.preparing":
-      mark("search", "active", "preparing");
-      next.searchPreparing = { method: d.method, cid: d.cid, url: d.url };
+      mark("discover", "active", "building search copy");
+      next.searchMethod = d.method;
+      if (d.search_copy) {
+        next.searchCopy = {
+          sha256: d.search_copy.sha256,
+          byteSize: d.search_copy.byte_size,
+          width: d.search_copy.width,
+          height: d.search_copy.height,
+          quality: d.search_copy.jpeg_quality,
+          resized: d.search_copy.resized,
+        };
+      }
       break;
 
     case "search.started":
-      mark("search", "active", d.display_name ?? d.provider);
+      mark("discover", "active", d.display_name ?? d.provider);
       next.searchProvider = d.provider;
+      next.searchMethod = d.method ?? next.searchMethod;
       break;
 
     case "search.completed":
@@ -172,7 +204,7 @@ export function reduceEvent(prev: PipelineState, event: RayaEvent): PipelineStat
         durationMs: d.duration_ms,
         isReplay: Boolean(d.is_replay),
       };
-      mark("search", "done", `${d.result_count} results`);
+      mark("discover", "done", `${d.result_count} discovered`);
       break;
 
     case "candidate.discovered":
@@ -214,7 +246,7 @@ export function reduceEvent(prev: PipelineState, event: RayaEvent): PipelineStat
       break;
 
     case "ipfs.uploading":
-      mark("anchor", "active", "ipfs");
+      mark("evidence", "active", "storing on ipfs");
       break;
 
     case "ipfs.uploaded":
@@ -224,13 +256,19 @@ export function reduceEvent(prev: PipelineState, event: RayaEvent): PipelineStat
         gatewayUrl: d.gateway_url ?? null,
         provider: d.provider,
       };
+      mark("evidence", "done", d.published ? "stored on ipfs" : "stored locally");
       break;
 
     case "blockchain.submitting":
       mark("anchor", "active", d.chain);
       break;
 
+    case "blockchain.submitted":
+      mark("anchor", "active", "submitted, awaiting confirmation");
+      break;
+
     case "blockchain.confirmed":
+      mark("anchor", "done", `block ${d.block_number}`);
       next.anchor = {
         txHash: d.tx_hash,
         blockNumber: d.block_number,
@@ -241,9 +279,26 @@ export function reduceEvent(prev: PipelineState, event: RayaEvent): PipelineStat
       };
       break;
 
+    case "readback.started":
+      mark("readback", "active", "reading contract state");
+      break;
+
+    case "readback.completed":
+      next.readback = {
+        onchainHash: d.onchain_evidence_hash,
+        localHash: d.local_evidence_hash,
+        matches: Boolean(d.matches),
+      };
+      mark("readback", d.matches ? "done" : "failed", d.matches ? "hashes match" : "hash mismatch");
+      break;
+
+    case "integrity.checking":
+      mark("integrity", "active");
+      break;
+
     case "integrity.verified":
       next.integrity = { verified: true, anchored: d.anchored, summary: d.summary };
-      mark("anchor", "done", "integrity verified");
+      mark("integrity", "done", "verified");
       break;
 
     case "integrity.failed":
@@ -254,20 +309,29 @@ export function reduceEvent(prev: PipelineState, event: RayaEvent): PipelineStat
       };
       // Not a hard failure: an unanchored run still has a real face match, and
       // the UI must say exactly that rather than showing a red pipeline.
-      mark("anchor", d.anchored ? "failed" : "skipped", d.summary);
+      mark("integrity", d.anchored ? "failed" : "skipped", d.summary);
       break;
 
     case "stage.failed": {
       next.warnings = [...next.warnings, { stage: d.stage, message: d.message }];
       const stageMap: Record<string, StageId> = {
-        search_prepare: "search",
-        search: "search",
-        ipfs: "anchor",
+        search_prepare: "discover",
+        search: "discover",
+        ipfs: "evidence",
         anchor: "anchor",
-        readback: "anchor",
+        readback: "readback",
+        ipfs_readback: "integrity",
       };
       const target = stageMap[d.stage as string];
-      if (target) mark(target, target === "anchor" ? "skipped" : "failed", d.message);
+      if (target) {
+        // A missing credential means the stage never ran; that is "skipped",
+        // not "failed". The distinction is what stops an unconfigured
+        // deployment from rendering as a broken one.
+        const unavailable = /not configured|SERPAPI_KEY|CONTRACT_ADDRESS|PINATA_JWT/i.test(
+          String(d.message ?? ""),
+        );
+        mark(target, unavailable ? "skipped" : "failed", d.message);
+      }
       break;
     }
 
@@ -346,6 +410,8 @@ export function usePipeline(verificationId: string | null, options: Options = {}
       "blockchain.submitting",
       "blockchain.submitted",
       "blockchain.confirmed",
+      "readback.started",
+      "readback.completed",
       "integrity.checking",
       "integrity.verified",
       "integrity.failed",

@@ -58,6 +58,9 @@ class EventType:
     BLOCKCHAIN_SUBMITTED = "blockchain.submitted"
     BLOCKCHAIN_CONFIRMED = "blockchain.confirmed"
 
+    READBACK_STARTED = "readback.started"
+    READBACK_COMPLETED = "readback.completed"
+
     INTEGRITY_CHECKING = "integrity.checking"
     INTEGRITY_VERIFIED = "integrity.verified"
     INTEGRITY_FAILED = "integrity.failed"

@@ -74,10 +74,23 @@ class ReverseSearchProvider(ABC):
     name: str
     display_name: str
     requires_public_url: bool = True
+    supports_direct_upload: bool = False
 
     @abstractmethod
     async def search(self, image_url: str) -> SearchResponse:
         """Run a reverse image search for a publicly reachable image URL."""
+
+    async def search_image(self, data: bytes, mime: str = "image/jpeg") -> SearchResponse:
+        """Search by uploading image bytes directly to the provider.
+
+        This is the preferred path: it needs no public hosting of the input, so
+        the original image is never published anywhere just to make it
+        searchable. Providers that cannot accept an upload fall back to
+        `search()` and must advertise `supports_direct_upload = False`.
+        """
+        raise NotImplementedError(
+            f"{self.name} does not support direct image upload."
+        )
 
     @property
     @abstractmethod
@@ -89,6 +102,7 @@ class ReverseSearchProvider(ABC):
             "provider": self.name,
             "display_name": self.display_name,
             "configured": self.configured,
+            "supports_direct_upload": self.supports_direct_upload,
         }
 
     @staticmethod

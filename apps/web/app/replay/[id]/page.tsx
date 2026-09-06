@@ -82,16 +82,7 @@ export default function ReplayPage({ params }: { params: Promise<{ id: string }>
           </Link>
         </div>
 
-        <div
-          className="replay-grid"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "180px minmax(0, 1fr)",
-            gap: "var(--s7)",
-            marginTop: "var(--s7)",
-            alignItems: "start",
-          }}
-        >
+        <div className="replay-grid" style={{ marginTop: "var(--s7)" }}>
           <div style={{ position: "sticky", top: "var(--s5)" }}>
             <JourneyRail state={state} />
           </div>
@@ -153,12 +144,6 @@ export default function ReplayPage({ params }: { params: Promise<{ id: string }>
         </div>
       </div>
 
-      <style>{`
-        @media (max-width: 1080px) {
-          .replay-grid { grid-template-columns: minmax(0, 1fr) !important; }
-          .replay-grid > div { position: static !important; }
-        }
-      `}</style>
     </main>
   );
 }

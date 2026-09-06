@@ -3,10 +3,17 @@
 /**
  * The left rail: where are we?
  *
- * Each node reflects a stage the backend reported. A stage only becomes active
- * when its event arrives, and `skipped` is a distinct state from `failed` --
- * an unanchored run did not fail, it produced a weaker result, and the rail
- * says so.
+ * Eight numbered stages, each reflecting an event the backend actually emitted.
+ * Four states are distinguished, and the distinctions carry meaning:
+ *
+ *   pending   the stage has not been reached
+ *   running   in progress
+ *   complete  finished successfully
+ *   failed    attempted and went wrong
+ *   skipped   never attempted, because it was not configured
+ *
+ * "skipped" is not a softer "failed". An unanchored run did not break -- it was
+ * never given a chain to anchor to, and the rail must not paint that red.
  */
 
 import { motion } from "framer-motion";
@@ -21,44 +28,57 @@ const COLORS: Record<StageState, string> = {
   skipped: "var(--pending)",
 };
 
+const GLYPH: Record<StageState, string> = {
+  idle: "○",
+  active: "◉",
+  done: "✓",
+  failed: "✕",
+  skipped: "—",
+};
+
+const STATE_WORD: Record<StageState, string> = {
+  idle: "pending",
+  active: "running",
+  done: "complete",
+  failed: "failed",
+  skipped: "not run",
+};
+
 function Marker({ state }: { state: StageState }) {
   const color = COLORS[state];
+  const glyph = (
+    <span
+      aria-hidden
+      style={{
+        display: "block",
+        width: 14,
+        textAlign: "center",
+        fontSize: state === "done" || state === "failed" ? 11 : 10,
+        lineHeight: "14px",
+        color,
+      }}
+    >
+      {GLYPH[state]}
+    </span>
+  );
 
   if (state === "active") {
     return (
       <motion.span
-        aria-hidden
-        style={{
-          width: 9,
-          height: 9,
-          borderRadius: "50%",
-          background: color,
-          display: "block",
-        }}
-        animate={{ scale: [1, 1.35, 1], opacity: [1, 0.55, 1] }}
+        style={{ display: "block" }}
+        animate={{ opacity: [1, 0.4, 1] }}
         transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-      />
+      >
+        {glyph}
+      </motion.span>
     );
   }
-
-  return (
-    <span
-      aria-hidden
-      style={{
-        width: 9,
-        height: 9,
-        borderRadius: "50%",
-        display: "block",
-        background: state === "idle" ? "transparent" : color,
-        border: state === "idle" ? `1.5px solid ${color}` : `1.5px solid ${color}`,
-      }}
-    />
-  );
+  return glyph;
 }
 
 export function JourneyRail({ state }: { state: PipelineState }) {
   return (
-    <nav aria-label="Verification stages" style={{ display: "flex", flexDirection: "column" }}>
+    <nav aria-label="Verification stages">
       <p className="label" style={{ marginBottom: "var(--s4)" }}>
         Journey
       </p>
@@ -67,9 +87,10 @@ export function JourneyRail({ state }: { state: PipelineState }) {
         {STAGE_ORDER.map((entry, index) => {
           const stage = state.stages[entry.id];
           const last = index === STAGE_ORDER.length - 1;
+          const reached = stage.state !== "idle";
 
           return (
-            <li key={entry.id} style={{ display: "flex", gap: "var(--s3)" }}>
+            <li key={entry.id} style={{ display: "flex", gap: "var(--s3)", minWidth: 0 }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                 <Marker state={stage.state} />
                 {!last && (
@@ -78,10 +99,10 @@ export function JourneyRail({ state }: { state: PipelineState }) {
                     style={{
                       width: 1,
                       flex: 1,
-                      minHeight: 34,
+                      minHeight: 28,
                       background:
                         stage.state === "done" ? "var(--verified)" : "var(--line)",
-                      opacity: stage.state === "done" ? 0.45 : 1,
+                      opacity: stage.state === "done" ? 0.4 : 1,
                       transition: "background var(--dur) var(--ease)",
                     }}
                   />
@@ -91,33 +112,49 @@ export function JourneyRail({ state }: { state: PipelineState }) {
               <div style={{ paddingBottom: last ? 0 : "var(--s4)", minWidth: 0, flex: 1 }}>
                 <span
                   style={{
-                    fontSize: 13.5,
-                    fontWeight: stage.state === "active" ? 600 : 460,
-                    color:
-                      stage.state === "idle" ? "var(--ink-quaternary)" : "var(--ink)",
-                    letterSpacing: "-0.01em",
-                    display: "block",
-                    lineHeight: 1.1,
+                    display: "flex",
+                    alignItems: "baseline",
+                    gap: 6,
+                    lineHeight: 1.15,
                   }}
                 >
-                  {stage.label}
-                </span>
-                {stage.detail && (
                   <span
                     className="mono"
+                    style={{ fontSize: 9.5, color: "var(--ink-quaternary)" }}
+                  >
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <span
                     style={{
-                      color: COLORS[stage.state],
-                      fontSize: 11,
-                      display: "block",
-                      marginTop: 3,
-                      wordBreak: "break-word",
+                      fontSize: 13,
+                      fontWeight: stage.state === "active" ? 600 : 460,
+                      color: reached ? "var(--ink)" : "var(--ink-quaternary)",
+                      letterSpacing: "-0.01em",
                     }}
                   >
-                    {stage.detail.length > 64
-                      ? `${stage.detail.slice(0, 64)}…`
-                      : stage.detail}
+                    {stage.label}
                   </span>
-                )}
+                </span>
+
+                {/* Always say what the state is, in words -- colour alone is not
+                    an accessible signal, and "not run" must never read as a
+                    quiet success. */}
+                <span
+                  className="mono"
+                  style={{
+                    display: "block",
+                    marginTop: 2,
+                    fontSize: 10,
+                    color: COLORS[stage.state],
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {stage.detail
+                    ? stage.detail.length > 46
+                      ? `${stage.detail.slice(0, 46)}…`
+                      : stage.detail
+                    : STATE_WORD[stage.state]}
+                </span>
               </div>
             </li>
           );

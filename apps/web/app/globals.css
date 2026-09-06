@@ -486,3 +486,94 @@ button {
   white-space: nowrap;
   border: 0;
 }
+
+/* ==========================================================================
+   workspace layout
+
+   Three columns answer three questions: where are we, what is happening, what
+   technically happened. Expressed as real CSS rather than inline styles so the
+   breakpoints are debuggable and cannot be defeated by specificity.
+
+   `min-width: 0` on every child is load-bearing: a grid item defaults to
+   `min-width: auto`, so a single long unbroken SHA-256 in a side rail forces
+   its track wider than the viewport and pushes the whole page sideways. That
+   is what clipped "RAYA" to "AYA".
+   ========================================================================== */
+
+.workspace {
+  display: grid;
+  grid-template-columns: 176px minmax(0, 1fr) 224px;
+  gap: var(--s7);
+  padding-top: var(--s6);
+  align-items: start;
+}
+
+.workspace > * {
+  min-width: 0;
+}
+
+.workspace-rail,
+.workspace-aside {
+  position: sticky;
+  top: var(--s5);
+  min-width: 0;
+}
+
+.workspace-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s6);
+}
+
+/* Two columns: fold the technical panel under the main column, keep the rail. */
+@media (max-width: 1180px) {
+  .workspace {
+    grid-template-columns: 160px minmax(0, 1fr);
+    gap: var(--s6);
+  }
+  .workspace-aside {
+    grid-column: 1 / -1;
+    position: static;
+  }
+}
+
+/* Single column: the rail becomes a horizontal strip above the work. */
+@media (max-width: 860px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s5);
+  }
+  .workspace-rail {
+    position: static;
+    grid-column: 1 / -1;
+  }
+}
+
+.replay-grid {
+  display: grid;
+  grid-template-columns: 176px minmax(0, 1fr);
+  gap: var(--s7);
+  align-items: start;
+}
+
+.replay-grid > * {
+  min-width: 0;
+}
+
+@media (max-width: 860px) {
+  .replay-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s5);
+  }
+  .replay-grid > div {
+    position: static !important;
+  }
+}
+
+/* Any long machine value: wrap rather than widen its container. */
+.field-value,
+.hash,
+.mono {
+  overflow-wrap: anywhere;
+}

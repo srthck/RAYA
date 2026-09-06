@@ -12,7 +12,7 @@
 import { useCallback, useRef, useState } from "react";
 import { motion } from "framer-motion";
 
-import { Empty } from "@/components/atoms";
+import { CopyHash, Empty, Field, Status } from "@/components/atoms";
 import { api, ApiError } from "@/lib/api";
 import { formatBytes } from "@/lib/format";
 import type { UploadResult } from "@/lib/types";
@@ -27,6 +27,7 @@ export function UploadZone({ onStart, disabled, disabledReason }: Props) {
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [upload, setUpload] = useState<UploadResult | null>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
@@ -37,6 +38,7 @@ export function UploadZone({ onStart, disabled, disabledReason }: Props) {
     setBusy(true);
     setUpload(null);
     setSelected(null);
+    setFile(file);
     try {
       const objectUrl = URL.createObjectURL(file);
       setPreview((old) => {
@@ -109,11 +111,20 @@ export function UploadZone({ onStart, disabled, disabledReason }: Props) {
             transition: "background var(--dur) var(--ease), border-color var(--dur) var(--ease)",
           }}
         >
+          <p className="label" style={{ marginBottom: "var(--s3)" }}>
+            Input evidence
+          </p>
           <p className="h2" style={{ fontWeight: 460 }}>
             {busy ? "Reading image…" : "Drop an image"}
           </p>
           <p className="body" style={{ marginTop: "var(--s2)", fontSize: 13.5 }}>
             or click to choose a file · JPEG, PNG, WebP
+          </p>
+          <p
+            className="mono"
+            style={{ marginTop: "var(--s4)", fontSize: 11, color: "var(--ink-quaternary)" }}
+          >
+            Hashed locally before anything else happens.
           </p>
           <input
             ref={inputRef}
@@ -185,6 +196,53 @@ export function UploadZone({ onStart, disabled, disabledReason }: Props) {
             })}
           </div>
 
+          {/* The input as evidence: exactly what was accepted, and the digest
+              of the exact original bytes -- never of a resized copy. */}
+          <div style={{ display: "grid", gap: "var(--s4)" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                justifyContent: "space-between",
+                gap: "var(--s2)",
+              }}
+            >
+              <span className="label">Input</span>
+              <Status
+                value={
+                  busy ? "RUNNING" : upload.face_count === 0 ? "FAILED" : "COMPLETE"
+                }
+              />
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+                gap: "var(--s4)",
+              }}
+            >
+              <Field label="File" value={file?.name ?? "—"} />
+              <Field label="Type" value={upload.format} />
+              <Field label="Dimensions" value={`${upload.width} × ${upload.height}`} />
+              <Field label="Size" value={formatBytes(upload.byte_size)} />
+              <Field
+                label="Face"
+                value={
+                  upload.face_count === 0
+                    ? "no usable face"
+                    : `${upload.face_count} detected`
+                }
+                tone={upload.face_count === 0 ? "rejected" : "verified"}
+              />
+            </div>
+
+            <Field
+              label="Input SHA-256"
+              value={<CopyHash value={upload.sha256} display={upload.sha256} />}
+            />
+          </div>
+
           <div
             style={{
               display: "flex",
@@ -194,12 +252,7 @@ export function UploadZone({ onStart, disabled, disabledReason }: Props) {
               justifyContent: "space-between",
             }}
           >
-            <div className="mono" style={{ color: "var(--ink-tertiary)", fontSize: 12 }}>
-              {upload.width} × {upload.height} · {formatBytes(upload.byte_size)} ·{" "}
-              {upload.face_count} face{upload.face_count === 1 ? "" : "s"}
-            </div>
-
-            <div style={{ display: "flex", gap: "var(--s2)" }}>
+            <div style={{ display: "flex", gap: "var(--s2)", marginLeft: "auto" }}>
               <button
                 type="button"
                 className="btn btn-ghost btn-sm"

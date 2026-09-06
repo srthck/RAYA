@@ -119,3 +119,112 @@ export function Empty({ children }: { children: React.ReactNode }) {
     </p>
   );
 }
+
+/**
+ * A semantic status word.
+ *
+ * An absent value must never look like a successful one. Rather than printing
+ * an em dash everywhere, each stage says what it actually is: WAITING (will
+ * run), NOT RUN (never attempted), UNAVAILABLE (cannot run as configured),
+ * N/A (does not apply to this run), FAILED, or a real result.
+ */
+export type StatusWord =
+  | "WAITING"
+  | "RUNNING"
+  | "NOT RUN"
+  | "NOT CREATED"
+  | "PENDING"
+  | "CONFIRMED"
+  | "UNAVAILABLE"
+  | "N/A"
+  | "FAILED"
+  | "COMPLETE"
+  | "PASS"
+  | "REJECTED"
+  | "MATCH"
+  | "MISMATCH"
+  | "VERIFIED";
+
+const STATUS_TONE: Record<StatusWord, Tone> = {
+  WAITING: "neutral",
+  RUNNING: "pending",
+  "NOT RUN": "neutral",
+  "NOT CREATED": "neutral",
+  PENDING: "pending",
+  CONFIRMED: "verified",
+  UNAVAILABLE: "pending",
+  "N/A": "neutral",
+  FAILED: "rejected",
+  COMPLETE: "verified",
+  PASS: "verified",
+  REJECTED: "rejected",
+  MATCH: "verified",
+  MISMATCH: "rejected",
+  VERIFIED: "verified",
+};
+
+const TONE_COLOR: Record<Tone, string> = {
+  verified: "var(--verified)",
+  rejected: "var(--rejected)",
+  pending: "var(--pending)",
+  neutral: "var(--ink-tertiary)",
+};
+
+export function Status({ value }: { value: StatusWord }) {
+  return (
+    <span
+      className="mono"
+      style={{
+        fontSize: 11.5,
+        fontWeight: 560,
+        letterSpacing: "0.06em",
+        color: TONE_COLOR[STATUS_TONE[value]],
+      }}
+    >
+      {value}
+    </span>
+  );
+}
+
+/** A labelled section of the technical panel, headed by its status. */
+export function StatusBlock({
+  title,
+  status,
+  reason,
+  children,
+}: {
+  title: string;
+  status: StatusWord;
+  reason?: string | null;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div style={{ display: "grid", gap: "var(--s3)", minWidth: 0 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          gap: "var(--s2)",
+        }}
+      >
+        <span className="label">{title}</span>
+        <Status value={status} />
+      </div>
+      {reason && (
+        <p
+          style={{
+            margin: 0,
+            fontSize: 11,
+            lineHeight: 1.45,
+            color: "var(--pending)",
+            overflowWrap: "anywhere",
+          }}
+        >
+          {reason}
+        </p>
+      )}
+      {children}
+    </div>
+  );
+}

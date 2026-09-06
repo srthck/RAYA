@@ -91,6 +91,9 @@ class VerificationResult:
     faces: list[dict[str, Any]] = field(default_factory=list)
     selected_face_index: Optional[int] = None
 
+    # The bounded derivative actually sent to the provider. Distinct object,
+    # distinct hash: never confuse it with the canonical input.
+    search_copy: Optional[Any] = None
     search: Optional[SearchResponse] = None
     candidates: list[Candidate] = field(default_factory=list)
     match: Optional[Candidate] = None
@@ -143,6 +146,7 @@ class VerificationResult:
             "faces": self.faces,
             "selected_face_index": self.selected_face_index,
             "search": self.search.to_dict() if self.search else None,
+            "search_copy": self.search_copy.to_dict() if self.search_copy else None,
             "counts": {
                 "results": len(self.candidates),
                 "social": len(self.social_candidates),

@@ -48,18 +48,9 @@ export default function VerifyPage() {
     <main className="shell" style={{ paddingBottom: "var(--s9)" }}>
       <Nav />
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "180px minmax(0, 1fr) 230px",
-          gap: "var(--s7)",
-          paddingTop: "var(--s6)",
-          alignItems: "start",
-        }}
-        className="workspace"
-      >
+      <div className="workspace">
         {/* ---- left: where are we -------------------------------------- */}
-        <div style={{ position: "sticky", top: "var(--s5)" }}>
+        <div className="workspace-rail">
           <JourneyRail state={state} />
 
           {verificationId && (
@@ -78,7 +69,7 @@ export default function VerifyPage() {
         </div>
 
         {/* ---- centre: what is happening ------------------------------- */}
-        <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "var(--s6)" }}>
+        <div className="workspace-main">
           {configError && (
             <div className="card" style={{ padding: "var(--s4)", borderColor: "var(--rejected)" }}>
               <p style={{ margin: 0, fontSize: 13.5, color: "var(--rejected)" }}>{configError}</p>
@@ -215,20 +206,10 @@ export default function VerifyPage() {
         </div>
 
         {/* ---- right: what technically happened ------------------------ */}
-        <div style={{ position: "sticky", top: "var(--s5)" }}>
+        <div className="workspace-aside">
           <TechPanel state={state} config={config} />
         </div>
       </div>
-
-      <style>{`
-        @media (max-width: 1080px) {
-          .workspace {
-            grid-template-columns: minmax(0, 1fr) !important;
-            gap: var(--s6) !important;
-          }
-          .workspace > div { position: static !important; }
-        }
-      `}</style>
     </main>
   );
 }
