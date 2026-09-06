@@ -91,6 +91,12 @@ export function CopyHash({
         color: copied ? "var(--verified)" : "var(--ink)",
         letterSpacing: "-0.02em",
         transition: "color var(--dur-fast) var(--ease)",
+        // A button does not wrap its label by default, so a full source URL
+        // or an unshortened digest would push the page wider than the
+        // viewport. Measured: 65px of horizontal overflow at 390px.
+        maxWidth: "100%",
+        whiteSpace: "normal",
+        overflowWrap: "anywhere",
       }}
     >
       {copied ? "copied" : (display ?? value)}

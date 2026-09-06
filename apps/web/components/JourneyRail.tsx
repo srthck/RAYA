@@ -141,6 +141,7 @@ export function JourneyRail({ state }: { state: PipelineState }) {
                     quiet success. */}
                 <span
                   className="mono"
+                  title={stage.detail ?? STATE_WORD[stage.state]}
                   style={{
                     display: "block",
                     marginTop: 2,
@@ -149,9 +150,12 @@ export function JourneyRail({ state }: { state: PipelineState }) {
                     overflowWrap: "anywhere",
                   }}
                 >
+                  {/* The rail is ~150px wide, so a long backend message is
+                      clipped to a glance here and shown in full in the main
+                      column. The title carries the whole string. */}
                   {stage.detail
-                    ? stage.detail.length > 46
-                      ? `${stage.detail.slice(0, 46)}…`
+                    ? stage.detail.length > 24
+                      ? `${stage.detail.slice(0, 24)}…`
                       : stage.detail
                     : STATE_WORD[stage.state]}
                 </span>

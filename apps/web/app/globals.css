@@ -490,19 +490,24 @@ button {
 /* ==========================================================================
    workspace layout
 
-   Three columns answer three questions: where are we, what is happening, what
-   technically happened. Expressed as real CSS rather than inline styles so the
-   breakpoints are debuggable and cannot be defeated by specificity.
+   Two columns, and only two: a Journey rail and a main column. Everything
+   else -- upload, technical, this run, search, result -- stacks inside the
+   main column in normal document flow.
 
-   `min-width: 0` on every child is load-bearing: a grid item defaults to
-   `min-width: auto`, so a single long unbroken SHA-256 in a side rail forces
-   its track wider than the viewport and pushes the whole page sideways. That
-   is what clipped "RAYA" to "AYA".
+   This replaced a three-column layout whose third column was re-placed onto a
+   second grid row at narrow widths. The sticky rail then escaped its row and
+   floated over that panel during scroll (measured: 64,602px^2 of overlap at
+   1024px, invisible at scroll-0, which is why it survived an earlier fix).
+   With no third column there is no second row for the rail to overlap.
+
+   `min-width: 0` on every child stays load-bearing: a grid item defaults to
+   `min-width: auto`, so one long unbroken SHA-256 would otherwise force its
+   track wider than the viewport.
    ========================================================================== */
 
 .workspace {
   display: grid;
-  grid-template-columns: 176px minmax(0, 1fr) 224px;
+  grid-template-columns: 176px minmax(0, 1fr);
   gap: var(--s7);
   padding-top: var(--s6);
   align-items: start;
@@ -512,10 +517,13 @@ button {
   min-width: 0;
 }
 
-.workspace-rail,
-.workspace-aside {
+.workspace-rail {
   position: sticky;
   top: var(--s5);
+  /* Shrink the grid item to its content so the sticky containing block is the
+     rail itself. Without this the item stretches to the row height and sticky
+     has room to travel over neighbouring content. */
+  align-self: start;
   min-width: 0;
 }
 
@@ -526,27 +534,23 @@ button {
   gap: var(--s6);
 }
 
-/* Two columns: fold the technical panel under the main column, keep the rail. */
-@media (max-width: 1180px) {
+/* Narrow desktop / tablet: keep both columns, tighten the rail and gutter. */
+@media (max-width: 1100px) {
   .workspace {
-    grid-template-columns: 160px minmax(0, 1fr);
-    gap: var(--s6);
-  }
-  .workspace-aside {
-    grid-column: 1 / -1;
-    position: static;
+    grid-template-columns: 150px minmax(0, 1fr);
+    gap: var(--s5);
   }
 }
 
-/* Single column: the rail becomes a horizontal strip above the work. */
-@media (max-width: 860px) {
+/* Mobile: one column, rail first and in normal flow (never sticky). */
+@media (max-width: 760px) {
   .workspace {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--s5);
   }
   .workspace-rail {
     position: static;
-    grid-column: 1 / -1;
+    align-self: auto;
   }
 }
 
@@ -561,7 +565,7 @@ button {
   min-width: 0;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 760px) {
   .replay-grid {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--s5);

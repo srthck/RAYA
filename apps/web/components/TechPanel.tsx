@@ -89,7 +89,19 @@ export function TechPanel({
       : "NOT RUN";
 
   return (
-    <aside style={{ display: "flex", flexDirection: "column", gap: "var(--s5)", minWidth: 0 }}>
+    <aside
+      aria-label="Technical detail"
+      style={{
+        display: "grid",
+        // Full main-column width now, so the blocks flow into columns instead
+        // of one long narrow stack.
+        gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+        gap: "var(--s5) var(--s6)",
+        minWidth: 0,
+        paddingTop: "var(--s5)",
+        borderTop: "1px solid var(--line)",
+      }}
+    >
       {/* ---- static configuration -------------------------------------- */}
       <div>
         <p className="label" style={{ marginBottom: "var(--s3)" }}>
@@ -113,8 +125,6 @@ export function TechPanel({
         </div>
       </div>
 
-      <Divider />
-
       {/* ---- 01 input ---------------------------------------------------- */}
       <StatusBlock title="This run" status={inputStatus}>
         {state.input && (
@@ -136,8 +146,6 @@ export function TechPanel({
           </div>
         )}
       </StatusBlock>
-
-      <Divider />
 
       {/* ---- 03 discover ------------------------------------------------- */}
       <StatusBlock
@@ -183,8 +191,6 @@ export function TechPanel({
         </div>
       </StatusBlock>
 
-      <Divider />
-
       {/* ---- 04 verify --------------------------------------------------- */}
       <StatusBlock title="Verify" status={verifyStatus}>
         <div style={{ display: "grid", gap: "var(--s3)" }}>
@@ -210,8 +216,6 @@ export function TechPanel({
         </div>
       </StatusBlock>
 
-      <Divider />
-
       {/* ---- 05 evidence + IPFS ------------------------------------------ */}
       <StatusBlock title="Evidence" status={evidenceStatus}>
         <Field
@@ -236,8 +240,6 @@ export function TechPanel({
           title={state.storage?.cid}
         />
       </StatusBlock>
-
-      <Divider />
 
       {/* ---- 06/07/08 anchor, read-back, integrity ----------------------- */}
       <StatusBlock

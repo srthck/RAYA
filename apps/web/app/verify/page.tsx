@@ -56,11 +56,13 @@ export default function VerifyPage() {
           {verificationId && (
             <p
               className="mono"
+              title={verificationId}
               style={{
                 marginTop: "var(--s5)",
-                fontSize: 10.5,
+                fontSize: 10,
+                lineHeight: 1.4,
                 color: "var(--ink-quaternary)",
-                wordBreak: "break-all",
+                overflowWrap: "anywhere",
               }}
             >
               {verificationId}
@@ -203,12 +205,12 @@ export default function VerifyPage() {
               )}
             </>
           )}
-        </div>
 
-        {/* ---- right: what technically happened ------------------------ */}
-        <div className="workspace-aside">
+          {/* Technical lives in the main column, in normal flow, beneath the
+              work it describes. It is not a floating sidebar. */}
           <TechPanel state={state} config={config} />
         </div>
+
       </div>
     </main>
   );
