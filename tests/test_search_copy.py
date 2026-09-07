@@ -20,6 +20,7 @@ import httpx
 import pytest
 
 from raya.errors import (
+    SearchCredentialRejectedError,
     InvalidImageError,
     SearchProviderError,
     SearchProviderNotConfiguredError,
@@ -218,7 +219,15 @@ class TestUpload:
 
     @pytest.mark.parametrize(
         "status,expected",
-        [(401, SearchProviderNotConfiguredError), (413, SearchProviderError), (500, SearchProviderError)],
+        [
+            # A rejected credential is its own state: the provider was called
+            # and refused. Reporting it as "not configured" would contradict
+            # the reason shown beside it in the UI, and would render a real
+            # failure as a stage that never ran.
+            (401, SearchCredentialRejectedError),
+            (413, SearchProviderError),
+            (500, SearchProviderError),
+        ],
     )
     async def test_upload_http_errors_are_typed(self, status, expected):
         def handler(request: httpx.Request) -> httpx.Response:

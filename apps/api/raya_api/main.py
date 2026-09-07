@@ -17,8 +17,11 @@ Route groups:
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import io
 import json
+import os
+import sys
 import time
 import zipfile
 from typing import Any, Optional
@@ -98,6 +101,38 @@ async def config(runtime: Runtime = Depends(get_runtime)) -> dict[str, Any]:
     and to show the reviewer which parts of the pipeline are live.
     """
     return runtime.describe()
+
+
+@app.get("/v1/debug/search-config")
+async def debug_search_config(runtime: Runtime = Depends(get_runtime)) -> dict[str, Any]:
+    """Whether *this running process* loaded a search credential.
+
+    Added after a session lost time to a question that should be trivial: does
+    the server on this port hold the key that is currently in `.env`? The
+    answer needed process archaeology -- matching the listening PID's start
+    time against the file's mtime -- because `Settings` is cached per process
+    and a server started before an edit keeps the old value.
+
+    Deliberately exposes no secret: a boolean, a length, and a short SHA-256
+    fingerprint. The fingerprint is enough to compare the running process
+    against a fresh one without ever revealing the credential, and a 16-hex
+    prefix of a SHA-256 is not reversible to a 64-character key.
+    """
+    settings = runtime.settings
+    key = settings.serpapi_key or ""
+    return {
+        "provider": settings.search_provider,
+        "key_loaded": bool(key),
+        "key_length": len(key),
+        # Fingerprint only -- never the credential itself.
+        "key_fingerprint": hashlib.sha256(key.encode()).hexdigest()[:16] if key else None,
+        "search_configured": settings.search_configured,
+        "storage_provider": settings.ipfs_provider,
+        "chain_configured": settings.chain_configured,
+        "env_file": str(settings.model_config.get("env_file")),
+        "pid": os.getpid(),
+        "executable": sys.executable,
+    }
 
 
 # ---- uploads ---------------------------------------------------------------

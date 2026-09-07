@@ -30,7 +30,11 @@ from typing import Any
 import httpx
 
 from ..config import Settings, get_settings
-from ..errors import SearchProviderError, SearchProviderNotConfiguredError
+from ..errors import (
+    SearchCredentialRejectedError,
+    SearchProviderError,
+    SearchProviderNotConfiguredError,
+)
 from .base import ReverseSearchProvider, SearchResponse, SearchResult
 
 SERPAPI_ENDPOINT = "https://serpapi.com/search"
@@ -105,7 +109,9 @@ class GoogleLensProvider(ReverseSearchProvider):
             )
 
         if response.status_code == 401:
-            raise SearchProviderNotConfiguredError("SerpApi rejected the API key.")
+            raise SearchCredentialRejectedError(
+                "SerpApi rejected the API key.", provider=self.name
+            )
         if response.status_code == 413:
             raise SearchProviderError(
                 "The provider rejected the search copy as too large.", provider=self.name
@@ -226,7 +232,9 @@ class GoogleLensProvider(ReverseSearchProvider):
             )
 
         if response.status_code == 401:
-            raise SearchProviderNotConfiguredError("SerpApi rejected the API key.")
+            raise SearchCredentialRejectedError(
+                "SerpApi rejected the API key.", provider=self.name
+            )
         if response.status_code == 429:
             raise SearchProviderError(
                 "SerpApi rate limit or quota reached.", provider=self.name

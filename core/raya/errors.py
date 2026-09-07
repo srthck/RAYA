@@ -72,6 +72,18 @@ class SearchProviderNotConfiguredError(RayaError):
     http_status = 503
 
 
+class SearchCredentialRejectedError(SearchProviderError):
+    """The provider was called and refused the credential.
+
+    Deliberately distinct from `SearchProviderNotConfiguredError`: a key that
+    was never set means the stage never ran (and the UI shows it as skipped),
+    whereas a key the provider rejected means the stage ran and failed. Saying
+    "not configured" for a rejected key contradicts the reason shown beside it.
+    """
+
+    code = "search_credential_rejected"
+
+
 class NoCandidatesError(RayaError):
     code = "no_candidates"
 

@@ -328,6 +328,10 @@ export function reduceEvent(prev: PipelineState, event: RayaEvent): PipelineStat
         // "skipped", not "failed" -- an unconfigured deployment must not
         // render as a broken one. The backend sends the error code, so this is
         // decided on the code rather than by pattern-matching English prose.
+        // Codes meaning "this stage was never attempted". A *rejected*
+        // credential is not here: the provider was called and refused, which
+        // is a failure, and labelling it "not configured" would contradict the
+        // reason shown beside it.
         const NEVER_RAN = new Set([
           "chain_not_configured",
           "search_provider_not_configured",
