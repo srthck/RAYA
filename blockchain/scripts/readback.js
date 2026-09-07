@@ -5,10 +5,13 @@
  * file and the contract address, and it recomputes the digest itself rather
  * than trusting any value RAYA reported.
  *
- *   npx hardhat run scripts/readback.js --network coreTestnet2 \
- *     --  VER-20260906-ABC123  ../.raya-data/runs/VER-.../evidence.json
+ *   VERIFICATION_ID=VER-20260906-ABC123 \
+ *   EVIDENCE_PATH=../.raya-data/runs/VER-.../evidence.json \
+ *   npx hardhat run scripts/readback.js --network sepolia
  *
- * With no arguments it prints a summary of everything anchored by the contract.
+ * Hardhat consumes positional arguments itself, so the two inputs are read from
+ * the environment. With neither set it prints a summary of everything the
+ * contract has anchored.
  */
 
 const fs = require("fs");
@@ -32,8 +35,9 @@ function bpToSimilarity(bp) {
 }
 
 async function main() {
-  const args = process.argv.slice(2).filter((a) => !a.startsWith("--"));
-  const [verificationId, evidencePath] = args;
+  const args = process.argv.slice(2).filter((a) => !a.startsWith("-"));
+  const verificationId = process.env.VERIFICATION_ID || args[0];
+  const evidencePath = process.env.EVIDENCE_PATH || args[1];
 
   const address = contractAddress();
   const contract = await hre.ethers.getContractAt("RayaEvidenceAnchor", address);

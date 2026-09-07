@@ -36,7 +36,7 @@ takes under 60 ms. A real run is dominated by network latency:
 | Reverse image search | 2–10 s | Third-party API round trip |
 | Candidate retrieval | 0.2–3 s each | Downloading from social CDNs |
 | IPFS pin | 1–5 s | Pinning service |
-| Chain anchor + confirmation | 3–15 s | Block time on Core Testnet2 |
+| Chain anchor + confirmation | 3–15 s | Block time on Ethereum Sepolia |
 
 So the design choices that matter for responsiveness are about concurrency and
 not blocking the event loop, not about model speed:
@@ -90,11 +90,11 @@ enough to locate the evidence, without a separate index.
 
 | Route | Route JS | First load |
 |-------|---------:|-----------:|
-| `/` | 2.44 kB | 144 kB |
-| `/about` | 4.25 kB | 110 kB |
-| `/verify` | 5.55 kB | 155 kB |
-| `/evidence/[id]` | 3.49 kB | 149 kB |
-| `/replay/[id]` | 1.48 kB | 151 kB |
+| `/` | 2.72 kB | 144 kB |
+| `/about` | 5.21 kB | 111 kB |
+| `/verify` | 3.71 kB | 160 kB |
+| `/evidence/[id]` | 6.03 kB | 152 kB |
+| `/replay/[id]` | 1.09 kB | 158 kB |
 
 Shared baseline is 103 kB. There is no UI framework, no icon library and no CSS
 framework — the design system is ~450 lines of CSS custom properties. Framer

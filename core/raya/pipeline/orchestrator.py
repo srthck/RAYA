@@ -31,7 +31,7 @@ from typing import Any, Optional
 from ..candidates.retriever import CandidateRetriever
 from ..candidates.types import Candidate, CandidateStatus
 from ..candidates.verifier import CandidateVerifier
-from ..chain.anchor import CoreAnchor, build_anchor
+from ..chain.anchor import EvmAnchor, build_anchor
 from ..config import Settings, get_settings
 from ..errors import (
     AnchorError,
@@ -71,7 +71,7 @@ class Pipeline:
         encoder: SFaceEncoder | None = None,
         provider: ReverseSearchProvider | None = None,
         store: EvidenceStore | None = None,
-        anchor: CoreAnchor | None = None,
+        anchor: EvmAnchor | None = None,
     ):
         self.settings = settings or get_settings()
         # Models are loaded once and reused: constructing them per request would

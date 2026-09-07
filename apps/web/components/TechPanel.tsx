@@ -289,7 +289,7 @@ export function TechPanel({
         }
       >
         <div style={{ display: "grid", gap: "var(--s3)" }}>
-          <Field label="Network" value={config?.chain.chain_name ?? "Core Testnet2"} mono={false} />
+          <Field label="Network" value={config?.chain.chain_name ?? "Ethereum Sepolia"} mono={false} />
           <Field
             label="Transaction"
             value={state.anchor ? shortHash(state.anchor.txHash) : "not run"}

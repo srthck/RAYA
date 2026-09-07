@@ -82,11 +82,11 @@ class Settings(BaseSettings):
     ipfs_public_gateway: str = "https://ipfs.io"
 
     # ---- blockchain --------------------------------------------------------
-    chain_rpc_url: str = "https://rpc.test2.btcs.network"
-    chain_id: int = 1114
-    chain_name: str = "Core Testnet2"
-    chain_currency: str = "tCORE2"
-    chain_explorer: str = "https://scan.test2.btcs.network"
+    chain_rpc_url: str = "https://ethereum-sepolia-rpc.publicnode.com"
+    chain_id: int = 11155111
+    chain_name: str = "Ethereum Sepolia"
+    chain_currency: str = "ETH"
+    chain_explorer: str = "https://sepolia.etherscan.io"
     contract_address: Optional[str] = None
     deployer_private_key: Optional[str] = None
     chain_tx_timeout_s: float = 180.0

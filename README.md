@@ -17,7 +17,7 @@ EVIDENCE                canonical JSON -> SHA-256
   |
 IPFS                    content-addressed storage
   |
-CORE TESTNET2           write-once anchor
+ETHEREUM SEPOLIA           write-once anchor
   |
 READ-BACK               fresh eth_call, compared to the local hash
   |
@@ -136,8 +136,8 @@ IPFS_PROVIDER=kubo        # requires `ipfs daemon` on 127.0.0.1:5001
 
 ## Blockchain
 
-**Core Testnet2**, chain id **1114**, RPC `https://rpc.test2.btcs.network`,
-explorer `https://scan.test2.btcs.network`.
+**Ethereum Sepolia**, chain id **11155111**, RPC `https://ethereum-sepolia-rpc.publicnode.com`,
+explorer `https://sepolia.etherscan.io`.
 
 ```bash
 cd blockchain
@@ -293,7 +293,7 @@ appears anywhere in it.
 | Genuine reverse search | Google Lens via SerpApi | `core/raya/search/serpapi.py` |
 | Matching social post | Runtime retrieval + classification | `core/raya/candidates/` |
 | No hardcoded results | `NullProvider` fails loudly instead | `core/raya/search/fallback.py` |
-| Blockchain record | Core Testnet2, write-once contract | `blockchain/contracts/` |
+| Blockchain record | Ethereum Sepolia, write-once contract | `blockchain/contracts/` |
 | Tamper-evident | Canonical JSON → SHA-256 → on-chain | `core/raya/evidence/` |
 | Run instructions | This file | above |
 | Limitations | Documented and shipped in-product | `docs/limitations.md` |
@@ -310,8 +310,8 @@ Detailed mapping: [docs/compliance.md](docs/compliance.md).
 | Run stops at `search_unavailable` | No `SERPAPI_KEY` | Add the key to `.env`. This is correct behaviour, not a bug — RAYA never fabricates candidates. |
 | `Search copy is N KB; the provider limit is 500 KB` | Input produced an oversized derivative | Should not occur; `benchmarks/calibrate.py` and the test suite bound this. File an issue with the image dimensions. |
 | IPFS shows `UNAVAILABLE` with a CID present | No pinning service configured | Set `PINATA_JWT`, or run a local `ipfs daemon` with `IPFS_PROVIDER=kubo`. |
-| `RPC reports chain id X, but CHAIN_ID is configured as 1114` | Pointing at the wrong network | Check `CHAIN_RPC_URL`. RAYA refuses to anchor to an unexpected chain rather than writing to the wrong one. |
-| `insufficient tCORE2 for gas` | Unfunded deployer key | Fund the address at <https://scan.test2.btcs.network/faucet>. |
+| `RPC reports chain id X, but CHAIN_ID is configured as 11155111` | Pointing at the wrong network | Check `CHAIN_RPC_URL`. RAYA refuses to anchor to an unexpected chain rather than writing to the wrong one. |
+| `insufficient ETH for gas` | Unfunded deployer key | Fund the address from a Sepolia faucet (Google Cloud, Alchemy or Chainlink). |
 | `this verification id is already anchored` | Re-anchoring an existing run | Expected: records are write-once by design. |
 | Frontend can't reach the API | API not on port 8000 | `NEXT_PUBLIC_API_URL` is resolved at **build** time — set it before `npm run build`, not before `npm start`. |
 | No faces found in a large photo | — | Detection is bounded to 1024 px on the long edge; very small faces in very large images may be missed. |

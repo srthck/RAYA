@@ -26,7 +26,7 @@ function usableDeployKey(value) {
         : `expected 64 hex characters, got ${hex.length}`;
     console.warn(
       `[raya] Ignoring DEPLOYER_PRIVATE_KEY: ${hint}. ` +
-        "Local tasks will run; deployment to coreTestnet2 will refuse with no account.",
+        "Local tasks will run; deployment to sepolia will refuse with no account.",
     );
     return null;
   }
@@ -38,9 +38,10 @@ const PRIVATE_KEY = usableDeployKey(RAW_KEY);
 /**
  * Hardhat configuration for the RAYA evidence anchor.
  *
- * Core Testnet2 is an EVM chain (id 1114), so no custom tooling is required --
- * only the RPC endpoint and a funded test key. Contract verification points at
- * Core's Blockscout-compatible explorer API.
+ * Ethereum Sepolia is the deployment target: a standard EVM chain (id
+ * 11155111) needing only an RPC endpoint and a funded test key. Sepolia was
+ * chosen over Ethereum Sepolia because Core's faucet CAPTCHA is broken
+ * ("Invalid domain for site key"), which made funding impossible.
  */
 module.exports = {
   solidity: {
@@ -57,29 +58,18 @@ module.exports = {
     hardhat: {
       chainId: 31337,
     },
-    coreTestnet2: {
-      url: process.env.CHAIN_RPC_URL || "https://rpc.test2.btcs.network",
-      chainId: 1114,
+    sepolia: {
+      url: process.env.CHAIN_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com",
+      chainId: 11155111,
       accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
-      // Core's gas price is stable and low; an explicit value avoids the
-      // occasional under-priced transaction when the RPC estimate lags.
-      gasPrice: 30000000000,
+      // Sepolia gas is volatile; let the RPC estimate rather than pinning a
+      // price that could leave the transaction stuck.
     },
   },
   etherscan: {
     apiKey: {
-      coreTestnet2: process.env.CORE_SCAN_API_KEY || "no-key-needed",
+      sepolia: process.env.ETHERSCAN_API_KEY || "",
     },
-    customChains: [
-      {
-        network: "coreTestnet2",
-        chainId: 1114,
-        urls: {
-          apiURL: "https://scan.test2.btcs.network/api",
-          browserURL: "https://scan.test2.btcs.network",
-        },
-      },
-    ],
   },
   paths: {
     sources: "./contracts",

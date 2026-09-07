@@ -122,7 +122,7 @@ function buildNodes(result: VerificationResult): LineageNode[] {
       state: result.storage?.published ? "done" : "skipped",
     },
     {
-      label: result.anchor?.chain_name ?? "Core Testnet2",
+      label: result.anchor?.chain_name ?? "Ethereum Sepolia",
       value: result.anchor ? shortHash(result.anchor.tx_hash, 12, 8) : "not anchored",
       title: result.anchor?.tx_hash,
       state: result.anchor ? "done" : "skipped",

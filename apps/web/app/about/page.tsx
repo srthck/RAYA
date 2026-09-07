@@ -19,7 +19,7 @@ const STAGES = [
   ["07", "Independent verification", "RAYA re-downloads each candidate image itself, detects a face with its own detector, encodes it with its own encoder, and compares. The search engine does not get a vote."],
   ["08", "Evidence", "A canonical JSON record is built and hashed. Canonical means byte-reproducible: the same logical record always yields the same digest."],
   ["09", "IPFS", "The bundle is stored under a content address, so the CID cannot later point at different content."],
-  ["10", "Anchor", "The evidence hash, input hash, source hash and CID are written to a write-once contract on Core Testnet2."],
+  ["10", "Anchor", "The evidence hash, input hash, source hash and CID are written to a write-once contract on Ethereum Sepolia."],
   ["11", "Read-back", "After confirmation, RAYA makes a fresh call to the contract and compares the stored hash with the local one."],
   ["12", "Integrity", "Only if that comparison passes does RAYA say the evidence is intact. A submitted transaction is not treated as success."],
 ];

@@ -2,7 +2,7 @@ from .abi import RAYA_ANCHOR_ABI
 from .anchor import (
     AnchorReceipt,
     BlockchainAnchor,
-    CoreAnchor,
+    EvmAnchor,
     OnChainRecord,
     bp_to_similarity,
     build_anchor,
@@ -13,7 +13,7 @@ __all__ = [
     "RAYA_ANCHOR_ABI",
     "AnchorReceipt",
     "BlockchainAnchor",
-    "CoreAnchor",
+    "EvmAnchor",
     "OnChainRecord",
     "bp_to_similarity",
     "build_anchor",

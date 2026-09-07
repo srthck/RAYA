@@ -15,7 +15,7 @@ const fs = require("fs");
 const path = require("path");
 const hre = require("hardhat");
 
-const EXPECTED_CHAIN_ID = 1114n;
+const EXPECTED_CHAIN_ID = 11155111n;
 
 async function main() {
   const network = await hre.ethers.provider.getNetwork();
@@ -35,9 +35,9 @@ async function main() {
   console.log(`Deployer     ${deployer.address}`);
   console.log(`Balance      ${hre.ethers.formatEther(balance)}`);
 
-  if (hre.network.name === "coreTestnet2" && network.chainId !== EXPECTED_CHAIN_ID) {
+  if (hre.network.name === "sepolia" && network.chainId !== EXPECTED_CHAIN_ID) {
     throw new Error(
-      `Expected Core Testnet2 (chain id ${EXPECTED_CHAIN_ID}) but the RPC reports ` +
+      `Expected Ethereum Sepolia (chain id ${EXPECTED_CHAIN_ID}) but the RPC reports ` +
         `${network.chainId}. Refusing to deploy to the wrong network.`
     );
   }
@@ -45,7 +45,7 @@ async function main() {
   if (balance === 0n) {
     throw new Error(
       `${deployer.address} has no balance. Fund it at ` +
-        "https://scan.test2.btcs.network/faucet and try again."
+        "an Ethereum Sepolia faucet and try again."
     );
   }
 
@@ -90,7 +90,7 @@ async function main() {
     blockNumber: receipt.blockNumber,
     deployer: deployer.address,
     deployedAt: new Date().toISOString(),
-    explorer: `https://scan.test2.btcs.network/address/${address}`,
+    explorer: `https://sepolia.etherscan.io/address/${address}`,
   };
 
   const outDir = path.join(__dirname, "..", "deployments");

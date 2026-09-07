@@ -14,7 +14,7 @@ that proves it, so a reviewer can check a claim without reading the whole tree.
 | 3 | Genuine reverse image search | Google Lens via SerpApi: bounded copy uploaded to `POST /image`, then Lens queried by `image_id`. Original input never published. | `core/raya/search/serpapi.py`, `search/searchcopy.py` · `tests/test_search_copy.py` (25 tests) |
 | 4 | Find a matching public social post | Platform classifier + runtime retrieval + independent comparison | `core/raya/candidates/` · `TestFullRun` |
 | 5 | No hardcoded results | `NullProvider` raises `SearchProviderNotConfiguredError`; there is no code path that invents a candidate | `core/raya/search/fallback.py` · run without `SERPAPI_KEY` |
-| 6 | Blockchain record | Core Testnet2 (chain id 1114), write-once contract | `blockchain/contracts/RayaEvidenceAnchor.sol` · 17 contract tests |
+| 6 | Blockchain record | Ethereum Sepolia (chain id 11155111), write-once contract | `blockchain/contracts/RayaEvidenceAnchor.sol` · 17 contract tests |
 | 7 | Tamper-evident | Canonical JSON → SHA-256 → IPFS → on-chain, with read-back | `core/raya/evidence/` · `TestTamperDetection` · demo case E |
 | 8 | Public source code | This repository | — |
 | 9 | Run instructions | README "Run it locally" | verified from a clean clone |
@@ -32,18 +32,31 @@ The requirement list above distinguishes **implemented and tested** from
 |-------|:---:|:---:|:---:|
 | Face detection / encoding | yes | yes | yes |
 | Bounded search copy | yes | yes | yes |
-| SerpApi upload -> `image_id` -> Lens | yes | yes (mock transport) | **no — needs `SERPAPI_KEY`** |
-| Real social candidate | yes | yes (fixture) | **no — depends on live search** |
-| Independent verification | yes | yes | yes (local sources) |
+| SerpApi upload -> `image_id` -> Lens | yes | yes (mock transport) | yes — live Google Lens, 40 results |
+| Real social candidate | yes | yes (fixture) | yes — 10 candidates retrieved and compared |
+| Independent verification | yes | yes | yes — 8 verified, 2 rejected, best 0.9558 |
 | Evidence + canonical hash | yes | yes | yes |
-| IPFS pinning | yes | yes | **no — needs `PINATA_JWT`** |
-| Core Testnet2 deploy + anchor | yes | yes (Hardhat chain) | **no — needs funded key** |
-| Fresh read-back + integrity | yes | yes | **no — depends on anchor** |
-| Tamper detection | yes | yes | yes (local) |
+| IPFS pinning | yes | yes | yes — pinned, byte-exact round-trip |
+| Ethereum Sepolia deploy + anchor | yes | yes (Hardhat chain) | yes — contract `0x866704a12566dbbF2a86d6dEd0a7cB7238864032` |
+| Fresh read-back + integrity | yes | yes | yes — `eth_call` matched the local hash |
+| Tamper detection | yes | yes | yes — detected against the on-chain record |
 
-Nothing in the "no" column is simulated to look otherwise: an unconfigured
-capability is reported as UNAVAILABLE or NOT RUN in the UI and omitted from the
-evidence record.
+Nothing here is simulated: an unconfigured capability is reported as
+UNAVAILABLE or NOT RUN in the UI and omitted from the evidence record, and a
+row only reads "yes" once it has actually run against the live service.
+
+The end-to-end live run behind this table:
+
+| | |
+|---|---|
+| Verification | `VER-20260907-A09ACFB94F1F` |
+| Discovered | 40 Google Lens results, 6 social, 4 compared, 3 verified, 1 rejected |
+| Match | a public Facebook post, cosine similarity **0.5956** against a 0.40 threshold |
+| Evidence SHA-256 | `e6bde70e11fd451ae017efc2e59387582789ca1e1503099f59ffab12bd101577` |
+| IPFS | `QmTjMB4HUEPxpKGVhqFC6rfz8uEpQeAu1SX6Hg1V4UV1MG` (Pinata, published) |
+| Anchor tx | [`0xf1e436da…76bfa6`](https://sepolia.etherscan.io/tx/0xf1e436da2675ae7d228964e4e37a99600f6eeaf5d35f6014ae3976fda076bfa6), block 11655688 |
+| Read-back | fresh `eth_call` returned the same digest; `verifyEvidence()` agreed |
+| Tamper | altering `match.similarity` produced `eafc1ed5…836a62`, rejected by the contract |
 
 ---
 
@@ -135,14 +148,15 @@ success or a generic error.
 
 ```
 tests/test_face.py           21   detection, encoding, similarity separation
-tests/test_evidence.py       32   canonicalization, hashing, integrity, tamper, CID
+tests/test_evidence.py       35   canonicalization, hashing, integrity, tamper, CID
 tests/test_candidates.py     33   platform classification, SSRF guard, filtering
 tests/test_pipeline.py       23   end-to-end runs, failure modes, events, persistence
 tests/test_search_copy.py    25   search-copy bounds/determinism, upload, image_id,
                                   expiry, provider failures, credential absence
+tests/test_retrieval_cascade.py 15  image_url -> thumbnail -> page metadata cascade
 tests/test_contract_abi.py   17   Python ABI vs compiled artifact, bp round-trip
                             ---
-                            151   150 passing, 1 skipped, plus 17 Solidity tests
+                            169   168 passing, 1 skipped, plus 17 Solidity tests
 ```
 
 Run with `pytest` and `cd blockchain && npm test`.

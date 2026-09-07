@@ -20,7 +20,7 @@
       |         |         IPFS
       ----------+----------
                 |
-          CORE TESTNET2
+          ETHEREUM SEPOLIA
                 |
           ON-CHAIN READ-BACK
                 |
@@ -76,7 +76,7 @@ Implemented in `core/raya/pipeline/orchestrator.py`.
 | 06 | Verification | Retrieve, detect, encode, compare — per candidate | per candidate |
 | 07 | Evidence | Canonical JSON + SHA-256 | no |
 | 08 | IPFS | Content-addressed storage | **yes** |
-| 09 | Anchor | Core Testnet2 transaction | **yes** |
+| 09 | Anchor | Ethereum Sepolia transaction | **yes** |
 | 10 | Read-back | Fresh `eth_call` | **yes** |
 | 11 | Integrity | Compare local vs on-chain vs IPFS | — |
 

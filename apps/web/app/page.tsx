@@ -42,7 +42,7 @@ const BEATS = [
   },
   {
     lead: "The fingerprint gets anchored.",
-    body: "The digest goes onto Core Testnet2 and is read back from the chain and compared. Only then does RAYA say the evidence is intact.",
+    body: "The digest goes onto Ethereum Sepolia and is read back from the chain and compared. Only then does RAYA say the evidence is intact.",
   },
 ];
 
@@ -141,7 +141,7 @@ export default function Landing() {
             letterSpacing: "0.08em",
           }}
         >
-          YuNet · SFace · SHA-256 · IPFS · Core Testnet2
+          YuNet · SFace · SHA-256 · IPFS · Ethereum Sepolia
         </motion.p>
       </section>
 
@@ -241,7 +241,7 @@ export default function Landing() {
         }}
       >
         <span className="mono" style={{ color: "var(--ink-quaternary)" }}>
-          YuNet · SFace · SHA-256 · IPFS · Core Testnet2
+          YuNet · SFace · SHA-256 · IPFS · Ethereum Sepolia
         </span>
         <Link href="/about" className="mono" style={{ color: "var(--ink-tertiary)" }}>
           Limitations →

@@ -36,3 +36,6 @@ blockchain/deployments/
 # in apps/web/public are what ship; regenerate them with
 # scripts/build_environment.py.
 assets/environment-source.png
+
+# Next.js / TypeScript build artifacts
+*.tsbuildinfo

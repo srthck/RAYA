@@ -1,4 +1,4 @@
-"""Anchoring evidence on Core Testnet2, and reading it back.
+"""Anchoring evidence on Ethereum Sepolia, and reading it back.
 
 The read-back is the point. Submitting a transaction proves nothing on its own:
 it can revert, it can be dropped, it can land with different data than intended.
@@ -115,10 +115,10 @@ class BlockchainAnchor(ABC):
     def configured(self) -> bool: ...
 
 
-class CoreAnchor(BlockchainAnchor):
-    """Anchor on Core Testnet2 (chain id 1114) via web3.py."""
+class EvmAnchor(BlockchainAnchor):
+    """Anchor on an EVM chain (Ethereum Sepolia, chain id 11155111) via web3.py."""
 
-    name = "core_testnet2"
+    name = "sepolia"
 
     def __init__(self, settings: Settings | None = None):
         self.settings = settings or get_settings()
@@ -146,9 +146,9 @@ class CoreAnchor(BlockchainAnchor):
 
         w3 = Web3(Web3.HTTPProvider(self.settings.chain_rpc_url, request_kwargs={"timeout": 30}))
 
-        # Core produces blocks with an extraData field longer than the 32 bytes
-        # the default formatter accepts, so the POA middleware is required or
-        # every block/receipt lookup raises.
+        # Some EVM testnets produce blocks with an extraData field longer than
+        # the 32 bytes the default formatter accepts, so the POA middleware is
+        # injected defensively: it is harmless on Sepolia and required elsewhere.
         try:
             w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
         except Exception:  # noqa: BLE001 - older web3 exposes a different name
@@ -220,8 +220,8 @@ class CoreAnchor(BlockchainAnchor):
         if balance < gas_estimate * gas_price:
             raise AnchorError(
                 f"Account {account.address} has insufficient "
-                f"{self.settings.chain_currency} for gas. Fund it at "
-                f"{self.settings.chain_explorer}/faucet.",
+                f"{self.settings.chain_currency} for gas. Fund it from a "
+                f"{self.settings.chain_name} faucet.",
                 address=account.address,
                 balance=str(balance),
             )
@@ -360,5 +360,5 @@ def _reason(exc: Exception) -> str:
     return message[:300]
 
 
-def build_anchor(settings: Settings | None = None) -> CoreAnchor:
-    return CoreAnchor(settings or get_settings())
+def build_anchor(settings: Settings | None = None) -> EvmAnchor:
+    return EvmAnchor(settings or get_settings())
