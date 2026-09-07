@@ -64,6 +64,10 @@ class EventType:
     INTEGRITY_CHECKING = "integrity.checking"
     INTEGRITY_VERIFIED = "integrity.verified"
     INTEGRITY_FAILED = "integrity.failed"
+    # Nothing failed, but no anchor existed to compare against. Distinct from
+    # both: a run with no chain configured has not failed its integrity check,
+    # it simply has no external commitment to check against.
+    INTEGRITY_INCONCLUSIVE = "integrity.inconclusive"
 
     STAGE_FAILED = "stage.failed"
     VERIFICATION_COMPLETED = "verification.completed"

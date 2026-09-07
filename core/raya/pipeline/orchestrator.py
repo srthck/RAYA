@@ -505,15 +505,25 @@ class Pipeline:
         report = check_integrity(result.evidence, onchain_hash, ipfs_bytes)
         result.integrity = report
 
-        if report.verified and report.anchored:
+        if report.anchored and report.verified:
+            # A chain comparison ran and matched. This is the only path that
+            # earns the words "integrity verified".
             result.status = RunStatus.VERIFIED_AND_ANCHORED
             bus.emit(EventType.INTEGRITY_VERIFIED, **report.to_dict())
-        elif report.anchored:
-            result.status = RunStatus.VERIFIED_AND_ANCHORED
+        elif not report.verified:
+            # A check that actually ran did not pass.
+            result.status = (
+                RunStatus.VERIFIED_AND_ANCHORED
+                if report.anchored
+                else RunStatus.VERIFIED_NOT_ANCHORED
+            )
             bus.emit(EventType.INTEGRITY_FAILED, **report.to_dict())
         else:
+            # Everything that ran passed, but nothing was anchored, so there is
+            # no external commitment to compare against. Reporting this as a
+            # failure would be as wrong as reporting it as verified.
             result.status = RunStatus.VERIFIED_NOT_ANCHORED
-            bus.emit(EventType.INTEGRITY_FAILED, **report.to_dict())
+            bus.emit(EventType.INTEGRITY_INCONCLUSIVE, **report.to_dict())
 
     # ---- failure handling --------------------------------------------------
 

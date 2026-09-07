@@ -307,9 +307,22 @@ export function reduceEvent(prev: PipelineState, event: RayaEvent): PipelineStat
         anchored: Boolean(d.anchored),
         summary: d.summary,
       };
-      // Not a hard failure: an unanchored run still has a real face match, and
-      // the UI must say exactly that rather than showing a red pipeline.
-      mark("integrity", d.anchored ? "failed" : "skipped", d.summary);
+      // A check that ran did not pass. This is the only integrity outcome that
+      // is genuinely a failure.
+      mark("integrity", "failed", "hash mismatch");
+      break;
+
+    case "integrity.inconclusive":
+      next.integrity = {
+        verified: Boolean(d.verified),
+        anchored: Boolean(d.anchored),
+        summary: d.summary,
+      };
+      // Nothing failed, but there was no anchor to compare against. The rail
+      // gets a short phrase of its own rather than a truncated summary: in a
+      // ~150px column, "Integrity verified: the ..." reads as though the chain
+      // comparison had passed, directly under "Anchor: not run".
+      mark("integrity", "skipped", "not anchored");
       break;
 
     case "stage.failed": {
@@ -423,6 +436,7 @@ export function usePipeline(verificationId: string | null, options: Options = {}
       "integrity.checking",
       "integrity.verified",
       "integrity.failed",
+      "integrity.inconclusive",
       "stage.failed",
       "verification.completed",
       "verification.failed",

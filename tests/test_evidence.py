@@ -217,3 +217,39 @@ class TestCid:
 
     def test_uses_the_raw_codec_prefix(self):
         assert cidv1_raw(b"anything").startswith("bafkrei")
+
+
+class TestIntegrityOutcomes:
+    """Three outcomes, not two.
+
+    A run with no anchor has not *failed* its integrity check -- it has nothing
+    external to check against. Collapsing that into "failed" made the Journey
+    rail contradict itself: an amber "not run" marker beside text reading
+    "Integrity verified".
+    """
+
+    @pytest.fixture
+    def bundle(self):
+        return EvidenceBundle.create({"schema_version": "1.0", "match": {"similarity": 0.9}})
+
+    def test_ipfs_only_never_leads_with_integrity_verified(self, bundle):
+        """The exact string that misled in a narrow column."""
+        report = check_integrity(bundle, onchain_hash=None, ipfs_bytes=bundle.canonical)
+        summary = report.summary()
+
+        assert report.verified is True          # nothing that ran failed
+        assert report.anchored is False         # but no chain comparison happened
+        assert not summary.startswith("Integrity verified")
+        assert "Not anchored" in summary
+        assert "IPFS" in summary
+
+    def test_only_a_chain_comparison_earns_integrity_verified(self, bundle):
+        report = check_integrity(bundle, onchain_hash=bundle.sha256)
+        assert report.anchored is True
+        assert report.summary().startswith("Integrity verified")
+        assert "on-chain anchor" in report.summary()
+
+    def test_a_real_mismatch_still_reads_as_failed(self, bundle):
+        report = check_integrity(bundle, onchain_hash="f" * 64)
+        assert report.verified is False
+        assert report.summary().startswith("Integrity check failed")

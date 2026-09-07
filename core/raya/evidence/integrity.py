@@ -94,12 +94,28 @@ class IntegrityReport:
                 "retrieved from storage, so nothing independent was checked."
             )
 
-        sources = []
-        if any(c.name == "chain_match" and c.performed for c in self.checks):
-            sources.append("the on-chain anchor")
-        if any(c.name == "ipfs_match" and c.performed for c in self.checks):
+        chain = any(c.name == "chain_match" and c.performed for c in self.checks)
+        ipfs = any(c.name == "ipfs_match" and c.performed for c in self.checks)
+
+        if not chain:
+            # Something independent was checked -- but not the anchor. Lead
+            # with what was *not* established: read in a narrow column beside
+            # "Anchor: not run", a sentence starting "Integrity verified"
+            # reads as though the chain comparison had passed.
+            where = "the copy stored on IPFS" if ipfs else "an independent copy"
+            return (
+                f"Not anchored, so no chain comparison was possible. "
+                f"The local evidence hash does match {where}."
+            )
+
+        sources = ["the on-chain anchor"]
+        if ipfs:
             sources.append("the copy stored on IPFS")
-        return "Integrity verified: the local evidence hash matches " + " and ".join(sources) + "."
+        return (
+            "Integrity verified: the local evidence hash matches "
+            + " and ".join(sources)
+            + "."
+        )
 
     def to_dict(self) -> dict[str, Any]:
         return {
