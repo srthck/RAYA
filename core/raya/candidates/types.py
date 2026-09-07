@@ -92,6 +92,11 @@ class Candidate:
     fetched_url: Optional[str] = None       # after redirects
     http_status: Optional[int] = None
 
+    # Every URL tried for this candidate, in order, with what came back. A
+    # candidate is never silently discarded: if nothing was retrievable, this
+    # shows exactly what was attempted and why each option failed.
+    attempts: list[dict] = field(default_factory=list)
+
     face_count: Optional[int] = None
     face_quality: Optional[dict] = None
     verdict: Optional[CandidateVerdict] = None
@@ -130,6 +135,7 @@ class Candidate:
             "image_height": self.image_height,
             "fetched_url": self.fetched_url,
             "http_status": self.http_status,
+            "attempts": self.attempts,
             "face_count": self.face_count,
             "face_quality": self.face_quality,
             "duration_ms": self.duration_ms,

@@ -30,7 +30,7 @@ from ..face.types import FaceEmbedding
 from ..search.base import SearchResult
 from ..util.imaging import decode_image, encode_jpeg
 from .platforms import classify_url
-from .retriever import CandidateRetriever
+from .retriever import CandidateRetriever, RetrievalAttempt
 from .types import STATUS_REASONS, Candidate, CandidateStatus, CandidateVerdict
 
 # The preview shown beside the input face in the UI. Small on purpose: it is an
@@ -159,13 +159,30 @@ class CandidateVerifier:
     async def _evaluate(
         self, candidate: Candidate, subject: FaceEmbedding, bus: EventBus | None
     ) -> None:
-        # 1. Retrieve the image ourselves, and hash exactly what arrived.
-        retrieved = await self.retriever.fetch(candidate.image_url)
+        """Retrieve a usable image for this candidate, then compare it.
+
+        Tries a bounded cascade rather than a single URL, because one URL is
+        not enough in practice: platform crawler endpoints often serve HTML to
+        non-browser clients, and provider thumbnails are often too small to
+        compare. Order is fixed and every attempt is recorded.
+        """
+        usable = await self._retrieve_usable_image(candidate, bus)
+        if usable is None:
+            # `_retrieve_usable_image` has already set the most specific status
+            # it could determine from the attempts it made.
+            return
+
+        decoded, faces, retrieved = usable
+
         candidate.image_sha256 = retrieved.sha256
         candidate.image_bytes = retrieved.byte_size
         candidate.image_mime = retrieved.mime
         candidate.fetched_url = retrieved.final_url
         candidate.http_status = retrieved.http_status
+        candidate.image_width = decoded.width
+        candidate.image_height = decoded.height
+        candidate.face_count = len(faces)
+
         if bus:
             bus.emit(
                 EventType.CANDIDATE_FETCHED,
@@ -173,31 +190,17 @@ class CandidateVerifier:
                 sha256=retrieved.sha256,
                 bytes=retrieved.byte_size,
                 mime=retrieved.mime,
-                duration_ms=retrieved.duration_ms,
+                attempts=len(candidate.attempts),
             )
-
-        # 2. Decode in a worker thread so the event loop keeps serving SSE.
-        decoded = await asyncio.to_thread(decode_image, retrieved.data, self.settings)
-        candidate.image_width = decoded.width
-        candidate.image_height = decoded.height
-
-        # 3. Detect with our own detector.
-        faces = await asyncio.to_thread(self.detector.detect, decoded.bgr)
-        candidate.face_count = len(faces)
-        if not faces:
-            self._fail(candidate, CandidateStatus.NO_FACE)
-            return
-
-        if bus:
             bus.emit(
                 EventType.CANDIDATE_FACE_FOUND,
                 candidate_id=candidate.id,
                 face_count=len(faces),
             )
 
-        # 4. Score every face in the candidate image and keep the best. A group
-        #    photo containing the subject is a legitimate match, so scoring only
-        #    the largest face would miss real hits.
+        # Score every sufficiently large face and keep the best. A group photo
+        # containing the subject is a legitimate match, so scoring only the
+        # largest face would miss real hits.
         best_score: Optional[float] = None
         best_face = None
         for face in faces:
@@ -235,6 +238,141 @@ class CandidateVerifier:
                 threshold=threshold,
                 passed=passed,
             )
+
+    async def _retrieve_usable_image(self, candidate: Candidate, bus: EventBus | None):
+        """Walk the cascade until an image yields a face big enough to compare.
+
+        Order, deliberately fixed so runs are reproducible:
+
+          1. the provider's primary image URL
+          2. the provider's thumbnail
+          3. images the *source page* publicly declares (og:image, twitter:image,
+             link rel=image_src, JSON-LD)
+
+        Step 3 costs an extra request, so it is only reached when the direct
+        URLs produced nothing usable. Returns the first usable candidate, or
+        None having set the most specific failure status observed.
+        """
+        direct: list[tuple[str, str]] = []
+        for url, source in (
+            (candidate.image_url, "image_url"),
+            (candidate.thumbnail_url, "thumbnail_url"),
+        ):
+            if url and all(url != seen for seen, _ in direct):
+                direct.append((url, source))
+
+        best_effort = await self._try_sources(candidate, direct, bus)
+        if best_effort is not None:
+            return best_effort
+
+        # Nothing direct worked. Ask the public source page what image it
+        # declares for external consumers.
+        if candidate.page_url:
+            page_urls = await self.retriever.fetch_page_image_urls(candidate.page_url)
+            tried = {url for url, _ in direct}
+            from_page = [(u, "page_metadata") for u in page_urls if u not in tried]
+            if from_page:
+                best_effort = await self._try_sources(candidate, from_page, bus)
+                if best_effort is not None:
+                    return best_effort
+
+        self._set_cascade_failure(candidate)
+        return None
+
+    async def _try_sources(
+        self, candidate: Candidate, sources: list[tuple[str, str]], bus: EventBus | None
+    ):
+        """Try each URL in turn, recording the outcome of every one."""
+        for url, origin in sources:
+            attempt = RetrievalAttempt(url=url, source=origin, ok=False)
+            try:
+                retrieved = await self.retriever.fetch(url)
+            except SourceUnreachableError as exc:
+                attempt.reason = exc.message
+                candidate.attempts.append(attempt.to_dict())
+                continue
+            except RayaError as exc:
+                attempt.reason = exc.message
+                candidate.attempts.append(attempt.to_dict())
+                continue
+
+            attempt.final_url = retrieved.final_url
+            attempt.http_status = retrieved.http_status
+            attempt.content_type = retrieved.mime
+            attempt.byte_size = retrieved.byte_size
+            attempt.sha256 = retrieved.sha256
+
+            # The bytes were independently retrieved and hashed. Record that on
+            # the candidate now, before we know whether the image is usable:
+            # "retrieved and hashed, but no face" is a stronger, more honest
+            # statement than "no face" with nothing to show for the download.
+            if candidate.image_sha256 is None:
+                candidate.image_sha256 = retrieved.sha256
+                candidate.image_bytes = retrieved.byte_size
+                candidate.image_mime = retrieved.mime
+                candidate.fetched_url = retrieved.final_url
+                candidate.http_status = retrieved.http_status
+
+            try:
+                decoded = await asyncio.to_thread(
+                    decode_image, retrieved.data, self.settings
+                )
+            except RayaError as exc:
+                attempt.reason = f"undecodable: {exc.message}"
+                candidate.attempts.append(attempt.to_dict())
+                continue
+
+            attempt.decoded = True
+            attempt.width = decoded.width
+            attempt.height = decoded.height
+            if candidate.image_width is None:
+                candidate.image_width = decoded.width
+                candidate.image_height = decoded.height
+
+            faces = await asyncio.to_thread(self.detector.detect, decoded.bgr)
+            if candidate.face_count is None:
+                candidate.face_count = len(faces)
+            if not faces:
+                attempt.reason = "no face detected"
+                candidate.attempts.append(attempt.to_dict())
+                continue
+
+            if not any(
+                f.quality.size_px >= self.settings.min_face_size_px for f in faces
+            ):
+                largest = max(f.quality.size_px for f in faces)
+                attempt.reason = (
+                    f"largest face {largest}px, below the "
+                    f"{self.settings.min_face_size_px}px minimum"
+                )
+                candidate.attempts.append(attempt.to_dict())
+                continue
+
+            attempt.ok = True
+            candidate.attempts.append(attempt.to_dict())
+            return decoded, faces, retrieved
+
+        return None
+
+    def _set_cascade_failure(self, candidate: Candidate) -> None:
+        """Choose the status that best describes why the cascade came up empty.
+
+        The most informative outcome wins: a face that was merely too small is
+        more specific than nothing decodable, which in turn is more specific
+        than nothing retrievable at all.
+        """
+        reasons = [a.get("reason") or "" for a in candidate.attempts]
+        decoded_any = any(a.get("decoded") for a in candidate.attempts)
+
+        if any("below the" in r for r in reasons):
+            self._fail(candidate, CandidateStatus.FACE_TOO_SMALL)
+        elif any("no face detected" in r for r in reasons):
+            self._fail(candidate, CandidateStatus.NO_FACE)
+        elif decoded_any:
+            self._fail(candidate, CandidateStatus.UNDECODABLE)
+        else:
+            detail = reasons[0] if reasons else None
+            self._fail(candidate, CandidateStatus.UNREACHABLE, detail)
 
     @staticmethod
     def _fail(
