@@ -1,6 +1,8 @@
 # RAYA — Discover. Verify. Anchor.
-live link = https://raya-rust.vercel.app/ 
+
 **An evidence-first visual verification pipeline that separates reverse-image discovery from independent face verification and cryptographically anchors the resulting evidence.**
+
+**[Live Demo](https://raya-rust.vercel.app) · [API Docs](https://raya-api-x53j.onrender.com/docs) · [GitHub](https://github.com/srthck/RAYA)**
 
 > ### Discovery is not proof.
 
@@ -22,7 +24,11 @@ Discover  →  Verify  →  Evidence  →  IPFS  →  Ethereum
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
 <p align="center">
-  <img src="docs/screenshots/landing.png" alt="RAYA landing page stating the project thesis, Discovery isn't proof, above the technology strip YuNet, SFace, SHA-256, IPFS, Ethereum Sepolia" width="900">
+  <img
+    src="docs/screenshots/landing.png"
+    alt="RAYA landing page stating the project thesis, Discovery isn't proof, above the technology strip YuNet, SFace, SHA-256, IPFS, Ethereum Sepolia"
+    width="100%"
+  />
 </p>
 
 ---
@@ -77,67 +83,96 @@ Every screenshot below is a real render of the application against the real back
 ### 1. Verification interface
 
 <p align="center">
-  <img src="docs/screenshots/verification.png" alt="RAYA verify page showing the eight-stage journey rail in a pending state beside an input dropzone that reads Hashed locally before anything else happens" width="900">
+  <img
+    src="docs/screenshots/verification.png"
+    alt="RAYA verify page showing the eight-stage journey rail in a pending state beside an input dropzone that reads Hashed locally before anything else happens"
+    width="100%"
+  />
 </p>
 
-**Run a real visual verification pipeline.** The dropzone accepts JPEG, PNG or WebP. The input bytes are hashed locally before anything else happens, and the eight-stage Journey rail on the left is the run's state machine — every stage begins `pending` and advances only on a backend event.
+The input is hashed locally before the pipeline begins. Every stage on the Journey rail starts `pending` and advances only on a backend event.
 
 ### 2. Live verification journey
 
 <p align="center">
-  <img src="docs/screenshots/journey.png" alt="Completed RAYA verification journey with all eight stages checked - Input, Face, Discover, Verify, Evidence, Anchor at block 11655688, Read-back hashes match, Integrity verified - above an instrument row reading 48.21s elapsed, 88 events, 1 face, 40 candidates, 4 compared, 0.5956 similarity" width="900">
+  <img
+    src="docs/screenshots/journey.png"
+    alt="Completed RAYA verification journey with all eight stages checked - Input, Face, Discover, Verify, Evidence, Anchor at block 11655688, Read-back hashes match, Integrity verified - above an instrument row reading 48.21s elapsed, 88 events, 1 face, 40 candidates, 4 compared, 0.5956 similarity"
+    width="100%"
+  />
 </p>
 
-**Backend-driven verification stages.** These stages represent actual backend events delivered over Server-Sent Events — not simulated frontend timers. The run above emitted **88 events in 48.21 s**. The rail reports what each stage produced: `40 discovered`, `similarity 0.5956`, `stored on ipfs`, `block 11655688`, `hashes match`.
+Real backend events drive the eight-stage journey over SSE — not simulated frontend timers. This run emitted **88 events in 48.21 s**.
 
 ### 3. Candidate discovery and independent verification
 
 <p align="center">
-  <img src="docs/screenshots/candidates.png" alt="RAYA candidate wall showing six public social candidates with mixed outcomes - two YouTube results marked Face too small, one YouTube result Rejected at 0.2758, and Flickr and Facebook results Verified at 0.5563, 0.5956 and 0.4868 against a 0.40 threshold" width="900">
+  <img
+    src="docs/screenshots/candidates.png"
+    alt="RAYA candidate wall showing six public social candidates with mixed outcomes - two YouTube results marked Face too small, one YouTube result Rejected at 0.2758, and Flickr and Facebook results Verified at 0.5563, 0.5956 and 0.4868 against a 0.40 threshold"
+    width="100%"
+  />
 </p>
 
-**Discovery produces candidates; RAYA independently verifies them.** Of 40 results, 6 were public social sources and 34 were filtered out. Each candidate carries its own audit trail — *public social source · image retrieved · face detected · face compared* — and reaches its own outcome. Two could not be compared at all (the face in the source image was below the minimum usable size), one was **rejected at 0.2758**, and three cleared the threshold. A rejected candidate is a working threshold, not a failure.
+Of 40 results, 6 were public social sources. Three cleared the threshold, one was **rejected at 0.2758**, and two could not be compared at all. A rejected candidate is a working threshold, not a failure.
 
 ### 4. Verified match
 
 <p align="center">
-  <img src="docs/screenshots/match.png" alt="RAYA independent verification panel showing input face and source face side by side with a similarity of 0.5956 against a 0.40 threshold, labelled Verified visual match, beside two columns listing what this establishes and what it does not establish" width="900">
+  <img
+    src="docs/screenshots/match.png"
+    alt="RAYA independent verification panel showing input face and source face side by side with a similarity of 0.5956 against a 0.40 threshold, labelled Verified visual match, beside two columns listing what this establishes and what it does not establish"
+    width="100%"
+  />
 </p>
 
-**Independent face verification.** Similarity **0.5956** against the configured **0.40** threshold. The panel is deliberately two-sided: it lists what the result establishes (a candidate source was discovered; a face was detected and encoded locally; the source image was independently retrieved; the score exceeded the threshold; evidence was anchored and matched on read-back) **and what it does not** (the real-world identity of any person; that the source itself is authentic; that no unindexed or private source exists; certainty beyond the limits of the face model).
+Similarity **0.5956** against the configured **0.40** threshold. The panel is deliberately two-sided: what the result establishes, and what it does not — including the real-world identity of any person.
 
 ### 5. Evidence record and integrity
 
-<table>
-<tr>
-<td width="50%">
-<img src="docs/screenshots/evidence.png" alt="RAYA evidence record page showing the local evidence SHA-256 and the on-chain evidence hash as identical values, with three passing integrity checks and buttons to re-check against chain or run a tamper test">
-<p align="center"><b>Canonical evidence and provenance</b></p>
-</td>
-<td width="50%">
-<img src="docs/screenshots/anchor.png" alt="RAYA anchored section listing the evidence SHA-256, IPFS CID, network Ethereum Sepolia, contract, transaction and block 11655688, followed by an integrity check section reporting read-back MATCH and integrity VERIFIED">
-<p align="center"><b>Anchored on Ethereum, read back and compared</b></p>
-</td>
-</tr>
-</table>
+<p align="center">
+  <img
+    src="docs/screenshots/evidence.png"
+    alt="RAYA evidence record page showing the local evidence SHA-256 and the on-chain evidence hash as identical values, with three passing integrity checks and buttons to re-check against chain or run a tamper test"
+    width="100%"
+  />
+</p>
 
-Three independent checks run, and each is reported separately: the local record matches its own hash (re-canonicalized and re-hashed), the on-chain hash matches the local hash (read back from the contract after confirmation), and the IPFS copy matches the local hash (re-downloaded and re-hashed).
+Three independent checks, each reported separately: the local record matches its own hash, the on-chain hash matches the local hash, and the IPFS copy matches the local hash.
+
+<p align="center">
+  <img
+    src="docs/screenshots/anchor.png"
+    alt="RAYA anchored section listing the evidence SHA-256, IPFS CID, network Ethereum Sepolia, contract, transaction and block 11655688, followed by an integrity check section reporting read-back MATCH and integrity VERIFIED"
+    width="100%"
+  />
+</p>
+
+The evidence fingerprint anchored on Ethereum Sepolia at block 11655688, read back with a fresh `eth_call` and compared: **MATCH**.
 
 ### 6. Evidence lineage
 
 <p align="center">
-  <img src="docs/screenshots/lineage.png" alt="RAYA evidence lineage showing the chain from original input and its SHA-256, through the bounded search copy and its distinct hash, to the search provider, discovered candidates, selected source, source image hash, independent face comparison, evidence SHA-256, IPFS CID and the Ethereum Sepolia on-chain read-back" width="900">
+  <img
+    src="docs/screenshots/lineage.png"
+    alt="RAYA evidence lineage showing the chain from original input and its SHA-256, through the bounded search copy and its distinct hash, to the search provider, discovered candidates, selected source, source image hash, independent face comparison, evidence SHA-256, IPFS CID and the Ethereum Sepolia on-chain read-back"
+    width="100%"
+  />
 </p>
 
-**Content-addressed evidence.** The lineage makes the privacy boundary legible: the original input is hashed locally and never published, and the bounded search copy sent to the provider is a **separate object with a different hash**.
+The privacy boundary made legible: the original input is hashed locally and never published, and the bounded search copy sent to the provider is a **separate object with a different hash**.
 
 ### 7. Tamper detection
 
 <p align="center">
-  <img src="docs/screenshots/tamper.png" alt="RAYA tamper test result showing match.similarity altered from 0.595573 to 0.745573 on a copy of the record, the original hash in green, a completely different hash after tampering in red, and the verdict Tampering detected compared against the on-chain record" width="900">
+  <img
+    src="docs/screenshots/tamper.png"
+    alt="RAYA tamper test result showing match.similarity altered from 0.595573 to 0.745573 on a copy of the record, the original hash in green, a completely different hash after tampering in red, and the verdict Tampering detected compared against the on-chain record"
+    width="100%"
+  />
 </p>
 
-**Tampering changes the fingerprint.** One field is altered on a *copy* of the record, which is then re-canonicalized and re-hashed. The digest diverges completely, and the comparison is made against **the value read back from the chain**, not against a local copy. The stored evidence is never modified by the test.
+One field altered on a *copy*, re-canonicalized and re-hashed. The digest diverges completely, and the comparison is made against the value read back from the chain. The stored evidence is never modified.
 
 ---
 
@@ -741,7 +776,7 @@ The UI launches verifications, streams pipeline progress from SSE, lets you insp
 ## Testing
 
 ```bash
-pytest                                  # Python: 168 passed, 1 skipped
+pytest                                  # Python: 175 passed, 1 skipped
 cd blockchain && npx hardhat test       # Solidity: 17 passing
 cd apps/web && npx tsc --noEmit         # TypeScript: clean
 cd apps/web && npm run build            # Next.js production build
@@ -756,6 +791,7 @@ python scripts/layout_qa.py             # Playwright geometric layout QA
 | `tests/test_pipeline.py` | 23 | End-to-end runs, failure modes, events, persistence |
 | `tests/test_search_copy.py` | 25 | Search-copy bounds and determinism, upload, `image_id`, provider failures, credential absence |
 | `tests/test_retrieval_cascade.py` | 15 | `image_url` → thumbnail → page-metadata cascade |
+| `tests/test_model_paths.py` | 7 | Build and runtime resolve the same model directory and filenames |
 | `tests/test_contract_abi.py` | 17 | Python ABI vs compiled artifact, basis-point round-trip |
 | `blockchain/test/` | 17 | Anchoring, write-once immutability, validation, integrity checks, enumeration, gas budget |
 
@@ -818,15 +854,25 @@ No coverage percentage is claimed, because none has been measured.
 
 ## Deployment
 
+RAYA is deployed and publicly reachable.
+
 ```
-User → Vercel (Next.js) → RAYA API (FastAPI) → SerpApi · IPFS · Ethereum Sepolia
+User → Vercel (Next.js) → Render (FastAPI) → SerpApi · IPFS · Ethereum Sepolia
 ```
 
-The frontend is deployed on Vercel at [raya-rust.vercel.app](https://raya-rust.vercel.app). Deployment of the API is **optional and not currently public**: the models, the search credential and the signing key all live server-side, and the public frontend's `/api/*` rewrite currently resolves to a local address.
+| Component | URL |
+|---|---|
+| Frontend (Next.js, Vercel) | <https://raya-rust.vercel.app> |
+| Backend API (FastAPI, Render) | <https://raya-api-x53j.onrender.com> |
+| OpenAPI docs | <https://raya-api-x53j.onrender.com/docs> |
 
-To run the full stack publicly, host the FastAPI service somewhere reachable and rebuild the frontend with `NEXT_PUBLIC_API_URL` pointing at it — the rewrite is resolved at build time, so the variable must be set before `npm run build`. Secrets stay server-side: the browser never receives `SERPAPI_KEY`, `PINATA_JWT` or `DEPLOYER_PRIVATE_KEY`, and never calls SerpApi, Pinata or an RPC endpoint directly.
+The Vercel deployment is built with `NEXT_PUBLIC_API_URL=https://raya-api-x53j.onrender.com`. `next.config.mjs` rewrites `/api/*` to that origin **server-side**, so the browser makes same-origin requests and `EventSource` — which has no CORS escape hatch — keeps working. The rewrite is resolved at **build** time, so the variable must be set before `npm run build`, not before `npm start`.
 
-Everything in this README can be reproduced locally with `pytest`, `npx hardhat test`, `npm run build` and `python demo/run_demo.py`.
+Everything server-side stays server-side. The face models, `SERPAPI_KEY`, `PINATA_JWT` and `DEPLOYER_PRIVATE_KEY` live only on the API host; the browser never receives them and never calls SerpApi, Pinata or an RPC endpoint directly. `GET /v1/config` reports capability booleans, never credential values.
+
+**Render notes.** The build runs `pip install -r requirements.txt && python scripts/fetch_models.py`, which downloads YuNet and SFace and verifies them against pinned SHA-256 digests. Both the build script and the API print the same `MODEL_DIR` / `YuNet exists` / `SFace exists` block, so a host where the build and the runtime resolve different directories is visible in the deploy log. The API loads both models once at startup and refuses to start if either is missing. On a free instance the service sleeps when idle, so the first request after a pause pays a cold start.
+
+Everything in this README can also be reproduced locally with `pytest`, `npx hardhat test`, `npm run build` and `python demo/run_demo.py`.
 
 ---
 
