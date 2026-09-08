@@ -13,7 +13,22 @@ from typing import Literal, Optional
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# This file is <repo>/core/raya/config.py, so parents[2] is the repository root:
+#   parents[0] = <repo>/core/raya
+#   parents[1] = <repo>/core
+#   parents[2] = <repo>
+#
+# Deliberately derived from __file__ rather than the process working directory.
+# A deployed API is started by a process manager whose cwd is not guaranteed to
+# be the repo root, so anchoring on cwd would resolve the models to a different
+# directory than the build step wrote them to.
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
+# Environment variable that moves the model directory. pydantic-settings binds
+# it to `Settings.models_dir`; `scripts/fetch_models.py` honours the same name
+# with the same precedence so the build and the runtime cannot disagree.
+MODELS_DIR_ENV = "MODELS_DIR"
+DEFAULT_MODELS_DIR = REPO_ROOT / "models"
 
 
 class Settings(BaseSettings):
@@ -25,7 +40,7 @@ class Settings(BaseSettings):
     )
 
     # ---- face models -------------------------------------------------------
-    models_dir: Path = REPO_ROOT / "models"
+    models_dir: Path = DEFAULT_MODELS_DIR
     yunet_model: str = "face_detection_yunet_2023mar.onnx"
     sface_model: str = "face_recognition_sface_2021dec.onnx"
 
@@ -130,3 +145,22 @@ def reset_settings() -> None:
     """Test hook: force the next `get_settings()` to re-read the environment."""
     global _settings
     _settings = None
+
+
+def model_report(settings: Settings | None = None) -> str:
+    """Render the model-path validation block.
+
+    `scripts/fetch_models.py` prints this after downloading and the API prints
+    it at startup. Both lines therefore appear in the deploy log, so a host
+    where the build and the runtime resolve different directories is diagnosed
+    by comparing two log lines rather than inferred.
+    """
+    settings = settings or get_settings()
+    yunet, sface = settings.yunet_path, settings.sface_path
+    return "\n".join(
+        [
+            f"MODEL_DIR={settings.models_dir}",
+            f"YuNet exists={yunet.exists()}",
+            f"SFace exists={sface.exists()}",
+        ]
+    )

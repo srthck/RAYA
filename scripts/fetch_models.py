@@ -18,12 +18,47 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
 import sys
 import urllib.request
 from pathlib import Path
 
+# This file is <repo>/scripts/fetch_models.py, so parents[1] is the repository
+# root:
+#   parents[0] = <repo>/scripts
+#   parents[1] = <repo>
+#
+# Anchored on __file__ rather than the working directory so that the build step
+# writes to the same place `raya.config` reads from, whatever cwd the host uses.
 REPO_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_MODELS_DIR = REPO_ROOT / "models"
 BASE = "https://media.githubusercontent.com/media/opencv/opencv_zoo/main/models"
+
+
+def _models_dir_from_env() -> Path | None:
+    """Resolve MODELS_DIR exactly the way `raya.config.Settings` does.
+
+    This script stays dependency-free on purpose -- it has to run before
+    `pip install` has necessarily succeeded -- so it cannot simply import the
+    settings object. It therefore reproduces pydantic-settings' precedence:
+    a real environment variable wins over the same key in the repo's `.env`.
+    """
+    value = os.environ.get("MODELS_DIR")
+    if value:
+        return Path(value)
+
+    env_file = REPO_ROOT / ".env"
+    if not env_file.exists():
+        return None
+    for raw in env_file.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, val = line.partition("=")
+        if key.strip() == "MODELS_DIR":
+            val = val.strip().strip('"').strip("'")
+            return Path(val) if val else None
+    return None
 
 MODELS = [
     {
@@ -76,11 +111,19 @@ def download(url: str, target: Path) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Fetch RAYA face models.")
     parser.add_argument("--force", action="store_true", help="re-download even if present")
-    parser.add_argument("--models-dir", default=str(REPO_ROOT / "models"))
+    parser.add_argument(
+        "--models-dir",
+        default=None,
+        help="override the models directory (default: $MODELS_DIR, else <repo>/models)",
+    )
     args = parser.parse_args()
 
-    models_dir = Path(args.models_dir)
+    models_dir = (
+        Path(args.models_dir) if args.models_dir else (_models_dir_from_env() or DEFAULT_MODELS_DIR)
+    )
+    models_dir = models_dir.resolve()
     models_dir.mkdir(parents=True, exist_ok=True)
+    print(f"MODEL_DIR={models_dir}")
 
     failures = 0
     for model in MODELS:
@@ -115,8 +158,20 @@ def main() -> int:
             continue
         print(f"  verified {actual[:16]}...")
 
+    # Print the same validation block the API prints at startup, so the build
+    # log and the runtime log can be compared line for line.
+    yunet = models_dir / MODELS[0]["name"]
+    sface = models_dir / MODELS[1]["name"]
+    print()
+    print(f"MODEL_DIR={models_dir}")
+    print(f"YuNet exists={yunet.exists()}")
+    print(f"SFace exists={sface.exists()}")
+
     if failures:
         print(f"\n{failures} model(s) failed. RAYA cannot run without them.")
+        return 1
+    if not (yunet.exists() and sface.exists()):
+        print("\nA model is missing after a run that reported no failures.")
         return 1
     print("\nAll models present and verified.")
     return 0

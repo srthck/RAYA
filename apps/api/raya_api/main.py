@@ -24,6 +24,7 @@ import os
 import sys
 import time
 import zipfile
+from contextlib import asynccontextmanager
 from typing import Any, Optional
 
 from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, UploadFile
@@ -32,7 +33,7 @@ from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel, Field
 
 from raya import __version__
-from raya.config import get_settings
+from raya.config import get_settings, model_report
 from raya.errors import RayaError
 from raya.evidence.bundle import EvidenceBundle
 from raya.evidence.integrity import check_integrity, simulate_tamper
@@ -40,22 +41,64 @@ from raya.util.hashing import sha256_bytes
 
 from .runtime import Runtime, get_runtime
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Resolve and load the face models once, at boot.
+
+    Two things are deliberate here. The validation block is printed before any
+    load is attempted, so a deploy that cannot find its models says exactly
+    where it looked instead of failing later inside a request. And the models
+    are constructed at startup rather than lazily on the first request, so a
+    misconfigured deployment fails immediately and visibly rather than serving
+    a healthy-looking API that 500s the first time someone uploads an image.
+
+    The models are loaded here exactly once and reused for the process
+    lifetime; nothing in the request path downloads or re-reads them.
+    """
+    print(model_report(), flush=True)
+
+    settings = get_settings()
+    missing = [p for p in (settings.yunet_path, settings.sface_path) if not p.exists()]
+    if missing:
+        for path in missing:
+            print(f"MISSING MODEL: {path}", flush=True)
+        raise RuntimeError(
+            "Face models are not present in "
+            f"{settings.models_dir}. Run `python scripts/fetch_models.py` in the "
+            "same filesystem the API runs from, or set MODELS_DIR to the "
+            "directory the build wrote them to."
+        )
+
+    get_runtime()  # constructs YuNetDetector + SFaceEncoder once
+    print("Models loaded. RAYA API ready.", flush=True)
+    yield
+
+
 app = FastAPI(
     title="RAYA",
     version=__version__,
     description="Find the source. Verify the face. Anchor the evidence.",
     docs_url="/docs",
+    lifespan=lifespan,
 )
 
 # The API and the Next.js dev server run on different ports, so the browser
 # treats every call as cross-origin.
+#
+# In the deployed setup the browser is same-origin with Vercel and never talks
+# to this API directly -- Next rewrites `/api/*` to it server-side. The
+# production origin is allow-listed anyway so that a direct call fails loudly
+# on an explicit allow-list rather than silently on a missing one.
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "https://raya-rust.vercel.app",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:3001",
-    ],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
